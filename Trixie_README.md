@@ -85,7 +85,7 @@ To run OMXPlayer as a non-root user. For that user add them to the 'audio/video/
 You will also need the following packages for runtime on trixie:
 
     # the following should pull in what is needed for raspios trixie lite:
-    sudo apt install libavformat59 fonts-freefont-ttf 
+    sudo apt install libavformat61 fonts-freefont-ttf 
 
 Reboot to make sure the changes take effect.
 
