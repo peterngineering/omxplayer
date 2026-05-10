@@ -1,7 +1,14 @@
 # Fork of : https://github.com/mjfwalsh/omxplayer
 
-*For most recent changes in master/please refer to upstream mjfwalsh*
+* For most recent changes in master/please refer to upstream developers changes.
+* For specific info for bookworm/trixie review the readme(s) in those branches here.
+* I have updated the instructions per distro branch. So far only Bookworm, Trixie soon.
+* Merged compatible changes from upstreams master.
+* Updated the Makefile.
 
+* * *
+The following is the original upstream text: 
+* * *
 
 # OMXPlayer
 
