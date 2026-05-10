@@ -1,5 +1,7 @@
 # OMXPlayer
 
+# Trixie Branch builds are not yet tested
+
 OMXPlayer is a command-line video player for the Raspberry Pi. It plays
 video directly from the command line and plays outside your
 [desktop environment](https://en.wikipedia.org/wiki/Desktop_environment). OMXPlayer uses the
@@ -80,9 +82,9 @@ To run OMXPlayer as a non-root user. For that user add them to the 'audio/video/
     # add non root user for /dev/vchiq access
     usermod -aG audio,video,input non_root_user
 
-You will also need the following packages for runtime on bookworm<sup>[*](#required-packages)</sup>:
+You will also need the following packages for runtime on trixie:
 
-    # the following should pull in what is needed for raspios bookworm lite
+    # the following should pull in what is needed for raspios trixie lite
     sudo apt install libavformat59 fonts-freefont-ttf 
 
 Reboot to make sure the changes take effect.
