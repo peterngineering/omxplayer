@@ -1,6 +1,6 @@
 # OMXPlayer
 
-# Trixie Branch builds are not yet tested
+# Forky Branch builds are not yet tested
 
 OMXPlayer is a command-line video player for the Raspberry Pi. It plays
 video directly from the command line and plays outside your
@@ -82,10 +82,10 @@ To run OMXPlayer as a non-root user. For that user add them to the 'audio/video/
     # add non root user for /dev/vchiq access
     usermod -aG audio,video,input non_root_user
 
-You will also need the following packages for runtime on trixie:
+You will also need the following packages for runtime on forky:
 
-    # the following should pull in what is needed for raspios trixie lite:
-    sudo apt install libavformat59 fonts-freefont-ttf 
+    # the following should pull in what is needed for raspios forky lite:
+    sudo apt install libavformat62 fonts-freefont-ttf 
 
 Reboot to make sure the changes take effect.
 
