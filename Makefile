@@ -55,7 +55,7 @@ clean:
 .PHONY: dist
 dist:
 	$(STRIP) omxplayer.bin
-	tar -cPf $(DIST) \
+	tar -caPf $(DIST) \
 	--transform 's,^omxplayer$$,/usr/local/bin/omxplayer,S' \
 	--transform 's,^omxplayer\.bin$$,/usr/local/bin/omxplayer.bin,S' \
 	--transform 's,^COPYING$$,/usr/local/share/doc/omxplayer/COPYING,S' \
