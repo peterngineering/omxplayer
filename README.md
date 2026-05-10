@@ -32,7 +32,7 @@ isn't available on the rpi4.
 
 DVD menus are not supported.
 
-OMXPlayer will not work on 64bit systems.
+OMXPlayer will not work on pure 64bit systems, but will work with a 64bit kernel on a 32bit userland.
 
 ## COMPILING
 
@@ -41,14 +41,22 @@ also need the following packages:
 
 ### Development packages
 
-Bullseye no longer comes with the required firmware files but it should still be possible to
+Raspios no longer comes with the required userland/firmware files but it should still be possible to
 get the required files by compiling and installing RaspberryPi's
-[userland](https://github.com/raspberrypi/userland) repo (requires cmake).
+[userland](https://github.com/raspberrypi/userland) repo (requires cmake). All development files
+will be in /opt/vc, as installed by cmake & 'buildme'
 
-To compile omxplayer you will also need the following packages<sup>[*](#required-packages)</sup>:
+After installing the userland, then to compile omxplayer you will also need the following Development packages:
+ 
+   Note: a few core raspios packages such as 'raspi-config' will be removed if installing the Development
+   packages, they can be reinstalled later.
 
-    git libasound2-dev libpcre2-dev libboost-dev libcairo2-dev libdvdread-dev
-    libdbus-1-dev libavutil-dev libswresample-dev libavcodec-dev libavformat-dev
+    #add development packages for rebuilding from source/git
+    sudo apt install git libasound2-dev libpcre2-dev libboost-dev libcairo2-dev libdvdread-dev \
+    libdbus-1-dev libraspberrypi-dev libraspberrypi0 libraspberrypi-bin \
+    gcc g++ libstdc++-10-dev pkg-config binutils libc6-dev libfreetype6-dev \
+    libavformat-dev perl
+
 
 Once you have these installed you should be able to compile OMXPlayer with a `make`
 
@@ -56,7 +64,7 @@ Once you have these installed you should be able to compile OMXPlayer with a `ma
 
 To run OMXPlayer need to disable the kms driver. You can do this by replacing it with the fake
 kms driver or by disabling it completely. You can do this by changing the `dtoverlay` setting in
-your system's `/boot/config.txt` file.
+your system's `/boot/firmware/config.txt` file.
 
     # kms is enabled so omxplayer can't run
     dtoverlay=vc4-kms-v3d
@@ -67,17 +75,19 @@ your system's `/boot/config.txt` file.
     # the kms driver is completely disabled
     #dtoverlay=vc4-kms-v3d
 
-You will also need the following static libraries:
+To run OMXPlayer as a non-root user. For that user add them to the 'audio/video/input' groups.
 
-    libbrcmEGL.so libbrcmGLESv2.so libopenmaxil.so
+    # add non root user for /dev/vchiq access
+    usermod -aG audio,video,input non_root_user
 
-which should be in the `/opt/vc/lib` directory.
+You will also need the following packages for runtime on bookworm<sup>[*](#required-packages)</sup>:
 
-You will also need the following packages<sup>[*](#required-packages)</sup>:
+    # the following should pull in what is needed for raspios bookworm lite
+    sudo apt install libavformat59 fonts-freefont-ttf 
 
-    libavcodec58 libavformat58 libavutil56 libswresample3 libcairo2
+Reboot to make sure the changes take effect.
 
-(These packages are included in the full version of Raspberry PI OS.)
+
 
 ### DVDs
 
@@ -96,19 +106,3 @@ Please see the [manpage](omxplayer.pod) for command line options.
 
 Please see [dbus.md](dbus.md) for details on OMXPlayer's dbus interface.
 
-## Required packages
-
-The above package lists assume you have all the packages that come preinstalled with
-Raspberry PI OS (lite) still installed.
-
-If you don't you will also need:
-
-### To compile
-
-    libraspberrypi-dev libraspberrypi0 libraspberrypi-bin gcc g++ libstdc++-10-dev pkg-config
-    binutils libc6-dev libfreetype6-dev  perl
-
-### To run
-
-    libc6 libdbus-1-3 libasound2 libfreetype6 libgcc1 libpcre3
-    libstdc++6 zlib1g ca-certificates dbus libdvdread8

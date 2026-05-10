@@ -61,9 +61,11 @@ dist:
 	--transform 's,^COPYING$$,/usr/local/share/doc/omxplayer/COPYING,S' \
 	--transform 's,^README\.md$$,/usr/local/share/doc/omxplayer/README,S' \
 	--transform 's,^omxplayer\.1$$,/usr/local/share/man/man1/omxplayer.1,S' \
+	--transform 's,^10\-vchiq-udev\.rules$$,/etc/udev/rules.d/10-vchiq-udev.rules,S' \
 	--transform 's,^/opt/vc/lib/,/usr/local/lib/omxplayer/,S' \
-	omxplayer omxplayer.bin COPYING README.md omxplayer.1 \
-	/opt/vc/lib/libbrcmEGL.so /opt/vc/lib/libbrcmGLESv2.so /opt/vc/lib/libopenmaxil.so
+	omxplayer omxplayer.bin COPYING README.md omxplayer.1 10-vchiq-udev.rules \
+	/opt/vc/lib/libbrcmEGL.so /opt/vc/lib/libbrcmGLESv2.so /opt/vc/lib/libopenmaxil.so \
+	/opt/vc/lib/libbcm_host.so /opt/vc/lib/libvchiq_arm.so /opt/vc/lib/libvcos.so
 
 .PHONY: install
 install:
