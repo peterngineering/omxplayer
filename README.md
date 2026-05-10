@@ -1,5 +1,8 @@
 # Fork of : https://github.com/mjfwalsh/omxplayer
 
+*For most recent changes in master/please refer to upstream mjfwalsh*
+
+
 # OMXPlayer
 
 OMXPlayer is a command-line video player for the Raspberry Pi. It plays
