@@ -1,6 +1,10 @@
 # Fork of : https://github.com/mjfwalsh/omxplayer
 
 * For most recent changes in master/please refer to upstream developers changes.
+
+* My branches for debian linux have a udev rule and are not posix.
+
+* * *
 * For specific info for bookworm/trixie/forky review the readme(s) in those branches.
 * I have updated the readme/instructions per distro branch.
 * So far, only Bookworm builds have been tested.
