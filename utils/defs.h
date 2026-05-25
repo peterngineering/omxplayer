@@ -1,5 +1,18 @@
+#pragma once
+
 #if LIBAVCODEC_VERSION_MAJOR < 59
     #define AVCONST
 #else
     #define AVCONST const
+#endif
+
+#if LIBAVCODEC_VERSION_MAJOR < 62
+    #include <libavcodec/avcodec.h>
+
+    #define AV_PROFILE_DTS_HD_HRA FF_PROFILE_DTS_HD_HRA
+    #define AV_PROFILE_DTS_HD_MA FF_PROFILE_DTS_HD_MA
+    #define AV_PROFILE_H264_BASELINE FF_PROFILE_H264_BASELINE
+    #define AV_PROFILE_H264_HIGH FF_PROFILE_H264_HIGH
+    #define AV_PROFILE_H264_MAIN FF_PROFILE_H264_MAIN
+    #define AV_PROFILE_UNKNOWN FF_PROFILE_UNKNOWN
 #endif
