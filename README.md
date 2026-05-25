@@ -6,10 +6,8 @@
 
 * * *
 * For specific info for bookworm/trixie/forky review the readme(s) in those branches.
-* I have updated the readme/instructions per distro branch.
-* So far, only Bookworm builds have been tested.
-    * Merged compatible changes from upstreams master.
-    * Updated the Makefile.
+* My branches have updated the readme/instructions per distro branch
+
 
 * * *
 The following is the original upstream text: 
