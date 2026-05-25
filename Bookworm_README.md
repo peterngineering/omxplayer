@@ -1,7 +1,6 @@
 # OMXPlayer
 
-# Bookworm branch builds tested. Last sync with master: Commit f312a53
-
+# Bookworm branch
 OMXPlayer is a command-line video player for the Raspberry Pi. It plays
 video directly from the command line and plays outside your
 [desktop environment](https://en.wikipedia.org/wiki/Desktop_environment). OMXPlayer uses the
