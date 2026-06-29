@@ -275,6 +275,9 @@ void OMXPlayerSubtitles::RenderLoop()
         break;
 
       switch(args->type) {
+        case Mailbox::INIT_SUB_LAYER:
+          m_renderer.initSubLayer();
+          break;
         case Mailbox::ADD_DVD_SUBS:
           {
             Mailbox::DVDSubs *a = (Mailbox::DVDSubs *)args;
@@ -612,4 +615,9 @@ void OMXPlayerSubtitles::AddPacket(OMXPacket *pkt)
 void OMXPlayerSubtitles::DisplayText(const string &text, int duration, bool wait)
 {
   SendToRenderer(new Mailbox::DisplayText(text, duration, wait));
+}
+
+void OMXPlayerSubtitles::ReInitSubLayer()
+{
+  SendToRenderer(Mailbox::INIT_SUB_LAYER);
 }

@@ -42,28 +42,57 @@ using namespace std;
 SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
 : m_centered(config->centered),
   m_ghost_box(config->ghost_box),
-  m_max_lines(config->subtitle_lines)
+  m_max_lines(config->subtitle_lines),
+  m_font_size(config->font_size)
 {
   // Subtitle tag parser regexes
   m_tags = new CRegExp("(\\n|<[^>]*>|\\{\\\\[^\\}]*\\})");
   m_font_color_html = new CRegExp("color[ \\t]*=[ \\t\"']*#?([a-f0-9]{6})");
   m_font_color_curly = new CRegExp("^\\{\\\\c&h([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})&\\}$");
 
-  // Determine screen size
-  const Rect &screen = DispmanxLayer::getScreenDimensions();
+  // import font files
+  if(FT_Init_FreeType(&m_ft_library) != 0)
+    throw "Failed to initiate FreeType";
+
+  if(FT_New_Face(m_ft_library, config->reg_font, 0, &m_ft_face_normal) != 0)
+    throw "Failed to load font";
+
+  if(FT_New_Face(m_ft_library, config->italic_font, 0, &m_ft_face_italic) != 0)
+    throw "Failed to load font";
+
+  if(FT_New_Face(m_ft_library, config->bold_font, 0, &m_ft_face_bold) != 0)
+    throw "Failed to load font";
+
+  // font colours
+  m_ghost_box_transparency = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 0.5f);
+  m_default_font_color = cairo_pattern_create_rgba(0.866667, 0.866667, 0.866667, 1.0f);
+  m_black_font_outline = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 1.0f);
+
+  initSubLayer();
+}
 
   /*    *    *    *     *    *    *    *    *    *    *    *
    * Set up layer for text subtitles and on screen display *
    *    *    *    *     *    *    *    *    *    *    *    */
+void SubtitleRenderer::initSubLayer()
+{
+  // free existing layer and scaled fonts (if any)
+  if (subtitleLayer) delete subtitleLayer;
+  if (m_scaled_font[NORMAL_FONT]) cairo_scaled_font_destroy(m_scaled_font[NORMAL_FONT]);
+  if (m_scaled_font[ITALIC_FONT]) cairo_scaled_font_destroy(m_scaled_font[ITALIC_FONT]);
+  if (m_scaled_font[BOLD_FONT]) cairo_scaled_font_destroy(m_scaled_font[BOLD_FONT]);
 
-  //Calculate font as thousands of screen height
-  m_font_size = screen.height * config->font_size;
+  // Determine screen size
+  const Rect &screen = DispmanxLayer::getScreenDimensions();
+
+  // Calculate font as thousands of screen height
+  m_scaled_font_size = screen.height * m_font_size;
 
   // Calculate padding as 1/4 of the font size
-  m_padding = m_font_size / 4;
+  m_padding = m_scaled_font_size / 4;
 
   // And line_height combines the two
-  int line_height = m_font_size + m_padding;
+  int line_height = m_scaled_font_size + m_padding;
 
   // Calculate image dimensions - must be evenly divisible by 16
   Rect text_subtitle_rect;
@@ -88,22 +117,7 @@ SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
   // Create layer
   subtitleLayer = new DispmanxLayer(4, text_subtitle_rect);
 
-  /*    *    *    *     *    *    *    *    *    *    *    *
-   *                      Set up fonts                     *
-   *    *    *    *     *    *    *    *    *    *    *    */
-
-  if(FT_Init_FreeType(&m_ft_library) != 0)
-    throw "Failed to initiate FreeType";
-
-  if(FT_New_Face(m_ft_library, config->reg_font, 0, &m_ft_face_normal) != 0)
-    throw "Failed to load font";
-
-  if(FT_New_Face(m_ft_library, config->italic_font, 0, &m_ft_face_italic) != 0)
-    throw "Failed to load font";
-
-  if(FT_New_Face(m_ft_library, config->bold_font, 0, &m_ft_face_bold) != 0)
-    throw "Failed to load font";
-
+  // prepare un-scaled fonts
   cairo_font_face_t *normal_font = cairo_ft_font_face_create_for_ft_face(m_ft_face_normal, 0);
   cairo_font_face_t *italic_font = cairo_ft_font_face_create_for_ft_face(m_ft_face_italic, 0);
   cairo_font_face_t *bold_font = cairo_ft_font_face_create_for_ft_face(m_ft_face_bold, 0);
@@ -111,17 +125,12 @@ SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
   // prepare scaled fonts
   cairo_matrix_t sizeMatrix, ctm;
   cairo_matrix_init_identity(&ctm);
-  cairo_matrix_init_scale(&sizeMatrix, m_font_size, m_font_size);
+  cairo_matrix_init_scale(&sizeMatrix, m_scaled_font_size, m_scaled_font_size);
   cairo_font_options_t *options = cairo_font_options_create();
 
   m_scaled_font[NORMAL_FONT] = cairo_scaled_font_create(normal_font, &sizeMatrix, &ctm, options);
   m_scaled_font[ITALIC_FONT] = cairo_scaled_font_create(italic_font, &sizeMatrix, &ctm, options);
   m_scaled_font[BOLD_FONT] = cairo_scaled_font_create(bold_font, &sizeMatrix, &ctm, options);
-
-  // font colours
-  m_ghost_box_transparency = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 0.5f);
-  m_default_font_color = cairo_pattern_create_rgba(0.866667, 0.866667, 0.866667, 1.0f);
-  m_black_font_outline = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 1.0f);
 
   // cleanup
   cairo_font_options_destroy(options);
@@ -129,6 +138,7 @@ SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
   cairo_font_face_destroy(italic_font);
   cairo_font_face_destroy(bold_font);
 }
+
   /*    *    *    *    *    *    *    *    *    *    *    *
    *            Set up layer for DVD subtitles            *
    *    *    *    *    *    *    *    *    *    *    *    */
@@ -263,8 +273,8 @@ void SubtitleRenderer::make_subtitle_image(vector<vector<SubtitleText> > &parsed
     // draw ghost box
     if(m_ghost_box) {
       set_color(&color, FC_GHOST);
-      cairo_rectangle(m_cr, cursor_x_position, cursor_y_position - m_font_size, box_width,
-        m_font_size + m_padding);
+      cairo_rectangle(m_cr, cursor_x_position, cursor_y_position - m_scaled_font_size, box_width,
+        m_scaled_font_size + m_padding);
       cairo_fill(m_cr);
     }
 
@@ -287,7 +297,7 @@ void SubtitleRenderer::make_subtitle_image(vector<vector<SubtitleText> > &parsed
     cairo_stroke(m_cr);
 
     // next line
-    cursor_y_position -= m_font_size + m_padding;
+    cursor_y_position -= m_scaled_font_size + m_padding;
   }
 
   m_cairo_image_data = cairo_image_surface_get_data(m_surface);

@@ -47,7 +47,10 @@ public:
   const int& getSourceWidth();
   const int& getSourceHeight();
 
-  static void openDisplay(int display_num, int layer, const Rect &rect);
+  static void openDisplay(int display_num);
+  static void setLayer(int layer);
+  static void setScreenRect(const Rect &rect);
+
   static const Rect &getScreenDimensions();
   static Rect GetVideoPort(float video_aspect_ratio, int aspect_mode);
   static void closeDisplay();

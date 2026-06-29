@@ -38,6 +38,7 @@ class DispmanxLayer;
 class Mailbox {
 public:
   enum Type {
+    INIT_SUB_LAYER,
     ADD_DVD_SUBS,
     CLOSE,
     PUSH,

@@ -889,8 +889,10 @@ static int startup(int argc, char *argv[])
   static OMXClock clock;
   m_av_clock = &clock;
 
-  // Open display
-  DispmanxLayer::openDisplay(m_config_video.display, m_config_video.layer, m_config_video.dst_rect);
+  // initialise display
+  DispmanxLayer::openDisplay(m_config_video.display);
+  DispmanxLayer::setLayer(m_config_video.layer);
+  DispmanxLayer::setScreenRect(m_config_video.dst_rect);
 
   // blank background - exclude fully transparent backgrounds
   if(background > 0x00FFFFFF)
@@ -1349,8 +1351,9 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       m_config_video.dst_rect.y = y1;
       m_config_video.dst_rect.width = x2 - x1;
       m_config_video.dst_rect.height = y2 - y1;
+      DispmanxLayer::setScreenRect(m_config_video.dst_rect);
       if(m_player_video) m_player_video->SetVideoRect(m_config_video.src_rect, m_config_video.dst_rect);
-      //if(m_player_subtitles) m_player_subtitles->SetSubtitleRect(x1, y1, x2, y2);
+      if(m_player_subtitles) m_player_subtitles->ReInitSubLayer();
       break;
     }
 
@@ -1608,6 +1611,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       if(m->get_arg_int64(&layer))
       {
         m->respond_int64(layer);
+        DispmanxLayer::setLayer(layer);
         if(m_player_video) m_player_video->SetLayer(layer);
       }
       else

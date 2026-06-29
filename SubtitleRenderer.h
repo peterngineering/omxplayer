@@ -37,6 +37,7 @@ class SubtitleRenderer : NoMoveCopy
 public:
   SubtitleRenderer(OMXSubConfig *config);
 
+  void initSubLayer();
   void setDVDSubtitleLayer(DispmanxLayer *dl);
 
   ~SubtitleRenderer();
@@ -119,7 +120,7 @@ private:
   FT_Face     m_ft_face_italic;
   FT_Face     m_ft_face_bold;
 
-  cairo_scaled_font_t *m_scaled_font[3];
+  cairo_scaled_font_t *m_scaled_font[3] = { nullptr, nullptr, nullptr};
 
   cairo_pattern_t *m_ghost_box_transparency;
   cairo_pattern_t *m_default_font_color;
@@ -132,5 +133,6 @@ private:
 
   // font properties
   int m_padding;
-  int m_font_size;
+  float m_font_size;
+  int m_scaled_font_size;
 };

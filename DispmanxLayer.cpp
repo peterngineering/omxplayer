@@ -37,7 +37,7 @@ int DispmanxLayer::s_layer;
 Rect DispmanxLayer::s_screen_rect;
 bool DispmanxLayer::s_is_fullscreen;
 
-void DispmanxLayer::openDisplay(int display_num, int layer, const Rect &screen_rect)
+void DispmanxLayer::openDisplay(int display_num)
 {
   // Open display
   s_display = vc_dispmanx_display_open(display_num);
@@ -45,9 +45,16 @@ void DispmanxLayer::openDisplay(int display_num, int layer, const Rect &screen_r
     throw "Dispamnx Error: Failed to open display layer\n"
     "(Note: omxplayer will not run if the kms driver is enabled)";
 
-  // set layer
-  s_layer = layer;
+  atexit(DispmanxLayer::closeDisplay);
+}
 
+void DispmanxLayer::setLayer(int layer)
+{
+  s_layer = layer;
+}
+
+void DispmanxLayer::setScreenRect(const Rect &screen_rect)
+{
   // set s_screen_rect rectangle
   if(screen_rect.width > 0 && screen_rect.height > 0)
   {
@@ -65,8 +72,6 @@ void DispmanxLayer::openDisplay(int display_num, int layer, const Rect &screen_r
     s_screen_rect.set(0, 0, screen_info.width, screen_info.height);
     s_is_fullscreen = true;
   }
-
-  atexit(DispmanxLayer::closeDisplay);
 }
 
 const Rect &DispmanxLayer::getScreenDimensions()
