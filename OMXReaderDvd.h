@@ -37,6 +37,7 @@ public:
   enum SeekResult SeekTime(int64_t &time, bool backwards) override;
   enum SeekResult SeekTimeDelta(int64_t delta, int64_t &cur_pts) override;
   inline bool CanSeek() override { return true; }
+  void GetChapterMetaData(std::vector<std::string> &chapter_list) override;
 
 protected:
   static int dvd_read(void *h, uint8_t* buf, int size);

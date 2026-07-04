@@ -87,7 +87,7 @@ public:
   static bool SetAvDict(const char *ad);
   static void SetDefaultTimeout(float timeout);
   void info_dump(const std::string &filename);
-  void GetChapterMetaData(std::vector<std::string>& chapter_list);
+  virtual void GetChapterMetaData(std::vector<std::string> &chapter_list) = 0;
 
 protected:
   class OMXStream

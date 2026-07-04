@@ -475,3 +475,23 @@ int OMXReaderDvd::GetCell(int needle)
 
   return l;
 }
+
+void OMXReaderDvd::GetChapterMetaData(std::vector<std::string> &chapter_list)
+{
+  for (auto cell : m_current_track.cells)
+  {
+    if (!cell.is_chapter) continue;
+
+    char buf[256];
+    int time = cell.time / 1000;
+    snprintf(buf,
+             sizeof(buf),
+             "%02d:%02d:%02d Chapter %u",
+             time / 3600,
+             (time / 60) % 60,
+             time % 60,
+             chapter_list.size() + 1);
+
+    chapter_list.emplace_back(buf);
+  }
+}

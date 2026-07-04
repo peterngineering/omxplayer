@@ -24,9 +24,8 @@
 #include "OMXReaderFile.h"
 
 #include <string>
+#include <vector>
 #include <stdint.h>
-
-#define MAX_OMX_CHAPTERS 64
 
 class OMXReaderFile : public OMXReader
 {
@@ -37,6 +36,7 @@ public:
   SeekResult SeekChapter(int delta, int &result_chapter, int64_t &cur_pts) override;
   enum SeekResult SeekTime(int64_t &time, bool backwards) override;
   enum SeekResult SeekTimeDelta(int64_t delta, int64_t &cur_pts) override;
+  void GetChapterMetaData(std::vector<std::string> &chapter_list) override;
 
 protected:
   void GetStreams();
@@ -44,6 +44,5 @@ protected:
   uint32_t *getPalette(OMXStream *st, uint32_t *palette) override;
   void AddExternalSubs();
 
-  int64_t m_chapters[MAX_OMX_CHAPTERS];
-  int m_chapter_count = 0;
+  std::vector<int64_t> m_chapters;
 };

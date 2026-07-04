@@ -24,6 +24,7 @@
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/opt.h>
+#include <libavutil/avstring.h>
 }
 
 #include "OMXReader.h"
@@ -151,18 +152,18 @@ SeekResult OMXReaderFile::SeekChapter(int delta, int &result_chapter, int64_t &c
   if(cur_pts == AV_NOPTS_VALUE) return SEEK_FAIL;
 
   // We have no chapters to seek to
-  if(m_chapter_count == 0)
+  if(m_chapters.empty())
     return SEEK_NO_CHAPTERS;
 
   // Find current chapter
   int current_chapter = 0;
-  for(; current_chapter < m_chapter_count - 1; current_chapter++)
+  for(; current_chapter < (int)m_chapters.size() - 1; current_chapter++)
     if(cur_pts >=   m_chapters[current_chapter] && cur_pts <  m_chapters[current_chapter+1])
       break;
 
   // turn delta into absolute value and check in within range
   int new_chapter = current_chapter + delta;
-  if(new_chapter < 0 || new_chapter >= m_chapter_count)
+  if(new_chapter < 0 || new_chapter >= (int)m_chapters.size())
     return SEEK_OUT_OF_BOUNDS;
 
   SeekResult r = SeekTime(m_chapters[new_chapter], delta < 0);
@@ -180,13 +181,13 @@ SeekResult OMXReaderFile::SeekChapter(int delta, int &result_chapter, int64_t &c
 
 void OMXReaderFile::GetChapters()
 {
-  m_chapter_count = (m_pFormatContext->nb_chapters > MAX_OMX_CHAPTERS) ? MAX_OMX_CHAPTERS : m_pFormatContext->nb_chapters;
-  for(int i = 0; i < m_chapter_count; i++)
+  m_chapters.resize(m_pFormatContext->nb_chapters);
+  for(unsigned int i = 0; i < m_pFormatContext->nb_chapters; i++)
   {
     const AVChapter *chapter = m_pFormatContext->chapters[i];
     if(!chapter)
     {
-      m_chapter_count = i;
+      m_chapters.resize(i);
       break;
     }
 
@@ -235,4 +236,40 @@ void OMXReaderFile::AddExternalSubs()
   this_stream.codec_name   = "srt";
   this_stream.name         = "External";
   this_stream.hints.codec  = AV_CODEC_ID_SRT;
+}
+
+void OMXReaderFile::GetChapterMetaData(std::vector<std::string> &chapter_list)
+{
+  int i = 0;
+  AVChapter *ch;
+  const AVDictionaryEntry *title;
+
+  for (int64_t chapter : m_chapters)
+  {
+    char buf[256];
+    int start_secs = chapter / 1000000;
+    int p = snprintf(buf,
+             sizeof(buf),
+             "%02d:%02d:%02d ",
+             start_secs / 3600,
+             (start_secs / 60) % 60,
+             start_secs % 60);
+
+    if ((ch = m_pFormatContext->chapters[i]) &&
+        (title = av_dict_get(ch->metadata, "title", NULL, 0)))
+    {
+      av_strlcpy(buf + p,
+           title->value,
+           sizeof(buf) - p);
+    }
+    else
+    {
+      snprintf(buf + p,
+           sizeof(buf) - p,
+           "Chapter %d", i + 1);
+    }
+
+    chapter_list.emplace_back(buf);
+    i++;
+  }
 }
