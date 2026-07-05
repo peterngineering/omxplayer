@@ -130,6 +130,11 @@ dump stream format before playback
 Path to true type italic font file for osd and subtitles. Defaults to
 /usr/share/fonts/truetype/freefont/FreeSansOblique.ttf
 
+=item B<--keep-alive>
+
+Don't exit the program when the end of a file is reached. Disables auto-playlists. New files
+can be played using the OpenUri dbus command
+
 =item B<--key-config> I<file>
 
 Uses key bindings in I<file> instead of the default. See L</"KEY CONFIG SYNTAX"> below for more.
@@ -185,6 +190,10 @@ let display handle interlace
 =item B<--no-boost-on-downmix>
 
 Don't boost volume when downmixing
+
+=item B<--no-cec>
+
+Disables cec commands
 
 =item B<--no-ghost-box>
 

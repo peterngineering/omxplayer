@@ -215,10 +215,23 @@ Unmute the audio stream.  If the stream is already unmuted, this does nothing.
 :-------------: | -------
  Return         | `null`
 
+##### ListChapters
+
+Returns an array of chapters. Each item in the array is a string in the
+following format:
+
+    HH:MM:SS <chapter name>
+
+Many media files may not have these defined
+
+   Params       |   Type
+:-------------: | ----------
+ Return         | `string[]`
+
 ##### ListSubtitles
 
 Returns a array of all known subtitles.  The length of the array is the number
-of subtitles.  Each item in the araay is a string in the following format:
+of subtitles.  Each item in the array is a string in the following format:
 
     <index>:<language>:<name>:<codec>:<active>
 
