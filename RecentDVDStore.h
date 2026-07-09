@@ -23,10 +23,10 @@
 class RecentDVDStore
 {
 public:
-  void readStore();
-  void retrieveRecentInfo(const std::string &key, int &track, int &time, std::string &audio, std::string &subtitle);
-  void remember(const int &track, const int &time, const std::string &audio, const std::string &subtitle);
-  void saveStore();
+  void ReadStore();
+  void RetrieveRecentInfo(const std::string &key, int &track, int &time, std::string &audio, std::string &subtitle);
+  void Remember(const int &track, const int &time, const std::string &audio, const std::string &subtitle);
+  void SaveStore();
 
 private:
   struct DVDInfo {

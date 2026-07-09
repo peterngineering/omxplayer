@@ -127,7 +127,7 @@ enum SeekResult OMXReaderFile::SeekTime(int64_t &seek_pts, bool backwards)
   if (m_pFormatContext->start_time != (int64_t)AV_NOPTS_VALUE)
     seek_value += m_pFormatContext->start_time;
 
-  reset_timeout(1);
+  ResetTimeout(1);
   bool success = av_seek_frame(m_pFormatContext, -1, seek_value, flags) >= 0;
 
   // demuxer will return failure, if you seek to eof
@@ -195,7 +195,7 @@ void OMXReaderFile::GetChapters()
   }
 }
 
-uint32_t *OMXReaderFile::getPalette(OMXStream *st, uint32_t *palette)
+uint32_t *OMXReaderFile::GetPalette(OMXStream *st, uint32_t *palette)
 {
   const char *p = (const char*)st->extradata;
 

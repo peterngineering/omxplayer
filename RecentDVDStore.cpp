@@ -44,7 +44,7 @@ static vector<string> split(const string &text)
   return tokens;
 }
 
-void RecentDVDStore::readStore()
+void RecentDVDStore::ReadStore()
 {
   // find recent DVD file store
   char *home = getenv("HOME");
@@ -82,7 +82,7 @@ void RecentDVDStore::readStore()
 }
 
 
-void RecentDVDStore::retrieveRecentInfo(const string &key, int &track, int &time, string &audio, string &subtitle)
+void RecentDVDStore::RetrieveRecentInfo(const string &key, int &track, int &time, string &audio, string &subtitle)
 {
   if(!m_init) return;
 
@@ -111,7 +111,7 @@ void RecentDVDStore::retrieveRecentInfo(const string &key, int &track, int &time
 }
 
 
-void RecentDVDStore::remember(const int &track, const int &time, const string &audio, const string &subtitle)
+void RecentDVDStore::Remember(const int &track, const int &time, const string &audio, const string &subtitle)
 {
   if(!m_init || current_dvd.empty()) return;
 
@@ -125,7 +125,7 @@ void RecentDVDStore::remember(const int &track, const int &time, const string &a
   store.insert(store.begin(), d);
 }
 
-void RecentDVDStore::saveStore()
+void RecentDVDStore::SaveStore()
 {
   if(!m_init) return;
 

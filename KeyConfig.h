@@ -137,5 +137,5 @@ enum Action
 
 namespace KeyConfig
 {
-  void buildKeymap(const char *filepath, std::unordered_map<int, int> &keymap);
+  void BuildKeymap(const char *filepath, std::unordered_map<int, int> &keymap);
 }

@@ -22,31 +22,31 @@ public:
 
   operator DBusMessage*() const { return m; }
 
-  bool get_arg_int(int *value);
-  bool get_arg_int64(int64_t *value);
-  bool get_arg_double(double *value);
-  bool get_arg_string(std::string &value);
+  bool GetArgInt(int *value);
+  bool GetArgInt64(int64_t *value);
+  bool GetArgDouble(double *value);
+  bool GetArgString(std::string &value);
 
-  bool ignore_arg();
+  bool IgnoreArg();
 
-  void respond_unknown_property();
-  void respond_unknown_method();
-  void respond_invalid_args();
+  void RespondUnknownProperty();
+  void RespondUnknownMethod();
+  void RespondInvalidArgs();
 
-  void respond_int64(int64_t value);
-  void respond_double(double value);
-  void respond_bool(bool value);
-  void respond_string(const std::string &value);
+  void RespondInt64(int64_t value);
+  void RespondDouble(double value);
+  void RespondBool(bool value);
+  void RespondString(const std::string &value);
 
-  void respond_array(const std::vector<std::string> &list);
-  void respond_array(const char *array[], int size);
+  void RespondArray(const std::vector<std::string> &list);
+  void RespondArray(const char *array[], int size);
 
-  void send_metadata(const char *url, int64_t *duration);
+  void SendMetadata(const char *url, int64_t *duration);
 
 private:
-  void respond(int type, void *value);
-  bool get_arg(int type, void *value);
-  void respond_error(const char *name, const char *msg);
+  void Respond(int type, void *value);
+  bool GetArg(int type, void *value);
+  void RespondError(const char *name, const char *msg);
 
   bool needs_response;
 };
@@ -56,11 +56,11 @@ class OMXControl : NoMoveCopy
 {
 public:
   ~OMXControl();
-  bool connect(const char *dbus_name);
-  enum ControlFlow getEvent();
+  bool Connect(const char *dbus_name);
+  enum ControlFlow GetEvent();
   operator bool() const;
 private:
-  void dispatch();
-  bool dbus_connect(const char *dbus_name);
-  void dbus_disconnect();
+  void Dispatch();
+  bool DbusConnect(const char *dbus_name);
+  void DbusDisconnect();
 };

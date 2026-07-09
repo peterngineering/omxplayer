@@ -37,16 +37,16 @@ public:
   VideoCore();
   ~VideoCore();
 
-  int get_mem_gpu();
+  int GetMemGpu();
   void SetVideoMode(const COMXStreamInfo *hints, FORMAT_3D_T is3d, bool NativeDeinterlace);
-  bool blank_background(uint32_t rgba, int layer, int video_display);
-  void saveTVState();
+  bool BlankBackground(uint32_t rgba, int layer, int video_display);
+  void SaveTVState();
 
-  float getDisplayAspect();
-  const char *getAudioDevice();
-  bool canPassThroughAC3();
-  bool canPassThroughDTS();
-  void turnOffNativeDeinterlace();
+  float GetDisplayAspect();
+  const char *GetAudioDevice();
+  bool CanPassThroughAC3();
+  bool CanPassThroughDTS();
+  void TurnOffNativeDeinterlace();
 
 private:
   bool m_native_interlace_active = false;

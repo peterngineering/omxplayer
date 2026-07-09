@@ -37,17 +37,17 @@ class SubtitleRenderer : NoMoveCopy
 public:
   SubtitleRenderer(OMXSubConfig *config);
 
-  void initSubLayer();
-  void setDVDSubtitleLayer(DispmanxLayer *dl);
+  void InitSubLayer();
+  void SetDVDSubtitleLayer(DispmanxLayer *dl);
 
   ~SubtitleRenderer();
 
-  void prepare(Subtitle &sub);
-  void prepare(const std::string &lines);
-  void show_next();
-  void hide();
-  void unprepare();
-  void clear();
+  void Prepare(Subtitle &sub);
+  void Prepare(const std::string &lines);
+  void ShowNext();
+  void Hide();
+  void Unprepare();
+  void Clear();
 
 private:
   DispmanxLayer *subtitleLayer = nullptr;
@@ -81,17 +81,17 @@ private:
       }
   };
 
-  void parse_lines(const std::string &text);
-  void make_subtitle_image(std::vector<std::vector<SubtitleText> > &parsed_lines);
-  void make_subtitle_image(Subtitle &sub);
-  unsigned int hex2int(const std::string &hex);
+  void ParseLines(const std::string &text);
+  void MakeSubtitleImage(std::vector<std::vector<SubtitleText> > &parsed_lines);
+  void MakeSubtitleImage(Subtitle &sub);
+  unsigned int Hex2int(const std::string &hex);
 
   CRegExp *m_tags;
   CRegExp *m_font_color_html;
   CRegExp *m_font_color_curly;
 
-  void set_font(int *old_font, int new_font);
-  void set_color(unsigned int *old_color, unsigned int new_color);
+  void SetFont(int *old_font, int new_font);
+  void SetColor(unsigned int *old_color, unsigned int new_color);
 
   enum {
     UNSET_FONT = -1,

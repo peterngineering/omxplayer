@@ -28,7 +28,7 @@
 
 using namespace std;
 
-void AutoPlaylist::readPlaylist(const string &filename)
+void AutoPlaylist::ReadPlaylist(const string &filename)
 {
   // reset object
   playlist_pos = -1;

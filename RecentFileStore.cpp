@@ -44,7 +44,7 @@ RecentFileStore::RecentFileStore()
   recent_dir += "/OMXPlayerRecent/"; // note the trailing slash
 }
 
-bool RecentFileStore::readStore()
+bool RecentFileStore::ReadStore()
 {
   if(recent_dir.empty()) return false;
 
@@ -63,7 +63,7 @@ bool RecentFileStore::readStore()
   }
 
   vector<string> recents;
-  getRecentFileList(recents);
+  GetRecentFileList(recents);
   sort(recents.begin(), recents.end());
   uint size = recents.size();
 
@@ -71,14 +71,14 @@ bool RecentFileStore::readStore()
 
   for(uint i = 0; i < size; i++) {
     store[i].url = recents[i];
-    readlink(&store[i]);
+    Readlink(&store[i]);
   }
 
   m_init = true;
   return true;
 }
 
-bool RecentFileStore::checkIfLink(const string &filename)
+bool RecentFileStore::CheckIfLink(const string &filename)
 {
   int start_point = filename.length() - 4;
   if(start_point > 0 && filename.substr(start_point) == ".url") {
@@ -104,17 +104,17 @@ static bool split(const string &line, string &key, string &val)
   return true;
 }
 
-void RecentFileStore::retrieveRecentInfo(const string &filename, int &track, int &pos, string &audio, int &audio_track, string &subtitle_lang, int &sub_track)
+void RecentFileStore::RetrieveRecentInfo(const string &filename, int &track, int &pos, string &audio, int &audio_track, string &subtitle_lang, int &sub_track)
 {
   for(unsigned i = 0; i < store.size(); i++) {
     if(store[i].url == filename) {
-      setDataFromStruct(&store[i], track, pos, audio, audio_track, subtitle_lang, sub_track);
+      SetDataFromStruct(&store[i], track, pos, audio, audio_track, subtitle_lang, sub_track);
       return;
     }
   }
 }
 
-void RecentFileStore::setDataFromStruct(const fileInfo *store_item, int &dvd_track, int &pos, string &audio, int &audio_track, string &subtitle, int &subtitle_track)
+void RecentFileStore::SetDataFromStruct(const fileInfo *store_item, int &dvd_track, int &pos, string &audio, int &audio_track, string &subtitle, int &subtitle_track)
 {
   if(dvd_track == -1)
     dvd_track = store_item->dvd_track;
@@ -145,7 +145,7 @@ static bool is_valid_link_url(const string &url)
 }
 
 
-void RecentFileStore::readlink(fileInfo *f)
+void RecentFileStore::Readlink(fileInfo *f)
 {
   string line;
   ifstream s(f->url);
@@ -191,18 +191,18 @@ void RecentFileStore::readlink(fileInfo *f)
   s.close();
 }
 
-void RecentFileStore::readlink(string &filename, int &track, int &pos, string &audio, int &audio_track, string &subtitle_lang, int &subtitle_track)
+void RecentFileStore::Readlink(string &filename, int &track, int &pos, string &audio, int &audio_track, string &subtitle_lang, int &subtitle_track)
 {
   fileInfo f;
   f.url = filename;
-  readlink(&f);
+  Readlink(&f);
 
   filename = f.url;
 
-  setDataFromStruct(&f, track, pos, audio, audio_track, subtitle_lang, subtitle_track);
+  SetDataFromStruct(&f, track, pos, audio, audio_track, subtitle_lang, subtitle_track);
 }
 
-void RecentFileStore::getRecentFileList(vector<string> &recents)
+void RecentFileStore::GetRecentFileList(vector<string> &recents)
 {
   if(recent_dir.empty()) return;
 
@@ -222,7 +222,7 @@ void RecentFileStore::getRecentFileList(vector<string> &recents)
   closedir(dir);
 }
 
-void RecentFileStore::forget(const string &key)
+void RecentFileStore::Forget(const string &key)
 {
   for(auto i = store.begin(); i != store.end(); i++) {
     if(i->url == key) {
@@ -232,7 +232,7 @@ void RecentFileStore::forget(const string &key)
   }
 }
 
-void RecentFileStore::remember(const string &url, const int &dvd_track, const int &pos, const string &audio, const int &audio_track, const string &subtitle, const int &subtitle_track)
+void RecentFileStore::Remember(const string &url, const int &dvd_track, const int &pos, const string &audio, const int &audio_track, const string &subtitle, const int &subtitle_track)
 {
   if(!m_init) return;
 
@@ -256,24 +256,24 @@ void RecentFileStore::remember(const string &url, const int &dvd_track, const in
   store.insert(store.begin(), newFile);
 }
 
-void RecentFileStore::clearRecents()
+void RecentFileStore::ClearRecents()
 {
   if(!m_init) return;
 
   vector<string> old_recents;
-  getRecentFileList(old_recents);
+  GetRecentFileList(old_recents);
 
   // delete the old recent files
   for(const string &recent : old_recents)
     std::remove(recent.c_str());
 }
 
-void RecentFileStore::saveStore()
+void RecentFileStore::SaveStore()
 {
   if(!m_init) return;
 
   // delete all existing link files
-  clearRecents();
+  ClearRecents();
 
   // set up some regexes
   CRegExp link_file("/([^/]+?)(\\.[^\\.]{1,4}|)$");

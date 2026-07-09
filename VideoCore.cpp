@@ -52,7 +52,7 @@ VideoCore::~VideoCore()
   bcm_host_deinit();
 }
 
-int VideoCore::get_mem_gpu()
+int VideoCore::GetMemGpu()
 {
   char response[80] = "";
   int gpu_mem = 0;
@@ -61,7 +61,7 @@ int VideoCore::get_mem_gpu()
   return gpu_mem;
 }
 
-static float get_display_aspect_ratio(HDMI_ASPECT_T aspect)
+static float GetDisplayAspectRatio(HDMI_ASPECT_T aspect)
 {
   switch (aspect) {
     case HDMI_ASPECT_4_3:   return 4.0/3.0;
@@ -75,7 +75,7 @@ static float get_display_aspect_ratio(HDMI_ASPECT_T aspect)
   }
 }
 
-static float get_display_aspect_ratio(SDTV_ASPECT_T aspect)
+static float GetDisplayAspectRatio(SDTV_ASPECT_T aspect)
 {
   switch (aspect) {
     case SDTV_ASPECT_4_3:  return 4.0/3.0;
@@ -184,7 +184,7 @@ void VideoCore::SetVideoMode(const COMXStreamInfo *hints, FORMAT_3D_T is3d, bool
         score += 1<<18;
 
       // prefer square pixels modes
-      float par = get_display_aspect_ratio((HDMI_ASPECT_T)tv->aspect_ratio)*(float)tv->height/(float)tv->width;
+      float par = GetDisplayAspectRatio((HDMI_ASPECT_T)tv->aspect_ratio)*(float)tv->height/(float)tv->width;
       score += fabs(par - 1.0f) * (1<<12);
 
       /*printf("mode %dx%d@%d %s%s:%x par=%.2f score=%d\n", tv->width, tv->height,
@@ -243,7 +243,7 @@ void VideoCore::SetVideoMode(const COMXStreamInfo *hints, FORMAT_3D_T is3d, bool
     delete[] supported_modes;
 }
 
-void VideoCore::saveTVState()
+void VideoCore::SaveTVState()
 {
   if(!tv_state)
   {
@@ -252,7 +252,7 @@ void VideoCore::saveTVState()
   }
 }
 
-float VideoCore::getDisplayAspect()
+float VideoCore::GetDisplayAspect()
 {
   float display_aspect;
 
@@ -261,17 +261,17 @@ float VideoCore::getDisplayAspect()
   vc_tv_get_display_state(&current_tv_state);
   if(current_tv_state.state & ( VC_HDMI_HDMI | VC_HDMI_DVI )) {
     //HDMI or DVI on
-    display_aspect = get_display_aspect_ratio((HDMI_ASPECT_T)current_tv_state.display.hdmi.aspect_ratio);
+    display_aspect = GetDisplayAspectRatio((HDMI_ASPECT_T)current_tv_state.display.hdmi.aspect_ratio);
   } else {
     //composite on
-    display_aspect = get_display_aspect_ratio((SDTV_ASPECT_T)current_tv_state.display.sdtv.display_options.aspect);
+    display_aspect = GetDisplayAspectRatio((SDTV_ASPECT_T)current_tv_state.display.sdtv.display_options.aspect);
   }
   display_aspect *= (float)current_tv_state.display.hdmi.height/(float)current_tv_state.display.hdmi.width;
 
   return display_aspect;
 }
 
-const char *VideoCore::getAudioDevice()
+const char *VideoCore::GetAudioDevice()
 {
   if (vc_tv_hdmi_audio_supported(EDID_AudioFormat_ePCM, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) == 0)
     return "omx:hdmi";
@@ -279,12 +279,12 @@ const char *VideoCore::getAudioDevice()
     return "omx:local";
 }
 
-bool VideoCore::canPassThroughAC3()
+bool VideoCore::CanPassThroughAC3()
 {
   return vc_tv_hdmi_audio_supported(EDID_AudioFormat_eAC3, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit) != 0;
 }
 
-bool VideoCore::canPassThroughDTS()
+bool VideoCore::CanPassThroughDTS()
 {
   return vc_tv_hdmi_audio_supported(EDID_AudioFormat_eDTS, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit) != 0;
 }

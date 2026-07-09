@@ -29,7 +29,7 @@ protected:
 
 public:
   CECListener();
-  enum Action getEvent();
+  enum Action GetEvent();
 
 private:
   static void InitCallback(void *object, uint32_t reason, uint32_t param1, uint32_t param2, uint32_t param3, uint32_t param4);

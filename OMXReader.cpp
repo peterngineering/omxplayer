@@ -69,18 +69,18 @@ OMXPacket::~OMXPacket()
   av_packet_free(&avpkt);
 }
 
-void OMXReader::reset_timeout(int x)
+void OMXReader::ResetTimeout(int x)
 {
   timeout_start = OMXClock::CurrentHostCounter();
   timeout_duration = x * timeout_default_duration;
 }
 
 
-int OMXReader::interrupt_cb(void *unused)
+int OMXReader::InterruptCb(void *unused)
 {
   if (timeout_duration && OMXClock::CurrentHostCounter() - timeout_start > timeout_duration)
   {
-    CLogLog(LOGERROR, "COMXPlayer::interrupt_cb - Timed out");
+    CLogLog(LOGERROR, "COMXPlayer::InterruptCb - Timed out");
     return 1;
   }
   return 0;
@@ -106,7 +106,7 @@ void OMXReader::SetCookie(const char *cookie)
 
 OMXReader::OMXReader()
 {
-  reset_timeout(3);
+  ResetTimeout(3);
 
   avformat_network_init();
 
@@ -118,7 +118,7 @@ OMXReader::OMXReader()
     throw "Invalid lavfdopts";
 
   // set the interrupt callback, appeared in libavformat 53.15.0
-  m_pFormatContext->interrupt_callback = { interrupt_cb, nullptr };
+  m_pFormatContext->interrupt_callback = { InterruptCb, nullptr };
 
   // if format can be nonblocking, let's use that
   m_pFormatContext->flags |= AVFMT_FLAG_NONBLOCK;
@@ -140,11 +140,11 @@ OMXPacket *OMXReader::Read()
     m_pFormatContext->pb->eof_reached = 0;
 
   // timeout
-  reset_timeout(1);
+  ResetTimeout(1);
 
   // create packet
   OMXPacket *omx_pkt = new OMXPacket();
-  if(av_read_frame(m_pFormatContext, omx_pkt->avpkt) < 0 || omx_pkt->avpkt->size < 0 || interrupt_cb())
+  if(av_read_frame(m_pFormatContext, omx_pkt->avpkt) < 0 || omx_pkt->avpkt->size < 0 || InterruptCb())
   {
     delete omx_pkt;
     m_eof = true;
@@ -177,7 +177,7 @@ OMXPacket *OMXReader::Read()
       if(omx_pkt->stream_type_index == -1)
         pStream->discard = AVDISCARD_ALL;
       else if(m_dvd_subs_need_init)
-        initDVDSubs();
+        init_dvd_subs();
     }
     else
     {
@@ -549,13 +549,13 @@ bool OMXReader::FindDVDSubs(Dimension &d, float &aspect, uint32_t **palette, uin
     aspect = d.width / (float)d.height;
   }
 
-  *palette = getPalette(&dvd_sub_stream, buf);
+  *palette = GetPalette(&dvd_sub_stream, buf);
   m_dvd_subs_need_init = false;
 
   return true;
 }
 
-void OMXReader::info_dump(const std::string &filename)
+void OMXReader::InfoDump(const std::string &filename)
 {
   printf("File: %s\n", filename.c_str());
   printf("Video Streams: %u\n", m_streams[OMXSTREAM_VIDEO].size());

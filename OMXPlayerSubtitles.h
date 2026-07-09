@@ -57,7 +57,7 @@ public:
   bool Open(size_t stream_count, const std::string &subtitle_path);
 
   void ReInitSubLayer();
-  void initDVDSubs(const Rect &view_port, const Dimension &sub_dim, const uint32_t *palette);
+  void InitDVDSubs(const Rect &view_port, const Dimension &sub_dim, const uint32_t *palette);
 
   void Close();
   void Flush();

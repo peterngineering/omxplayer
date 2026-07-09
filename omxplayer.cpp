@@ -191,7 +191,7 @@ static void show_progress_message(const char *msg, int pos)
                 msg, (pos/3600), (pos/60)%60, pos%60, (dur/3600), (dur/60)%60, dur%60);
 }
 
-static std::string getShortFileName()
+static std::string get_short_file_name()
 {
   int lastSlash = m_filename.find_last_of('/');
   std::string short_filename = m_filename.substr(lastSlash + 1);
@@ -201,7 +201,7 @@ static std::string getShortFileName()
   return short_filename;
 }
 
-static void UpdateRaspicastMetaData(const std::string &msg)
+static void update_raspicast_metadata(const std::string &msg)
 {
   std::ofstream fp("/dev/shm/.r_info");
   if(!fp.is_open()) return;
@@ -209,7 +209,7 @@ static void UpdateRaspicastMetaData(const std::string &msg)
   fp << "local\n" << msg << "\n";
 }
 
-static void printSubtitleOsd()
+static void print_subtitle_osd()
 {
   if(m_subtitle_index == -1) {
     m_subtitle_lang.clear();
@@ -224,13 +224,13 @@ static void printSubtitleOsd()
   m_player_subtitles->PrintInfo();
 }
 
-static void SetSpeed(float iSpeed)
+static void set_speed(float iSpeed)
 {
   m_omx_reader->SetSpeed(iSpeed);
   m_av_clock->SetSpeed(iSpeed);
 }
 
-static void FlushStreams(int64_t pts = AV_NOPTS_VALUE)
+static void flush_streams(int64_t pts = AV_NOPTS_VALUE)
 {
   m_av_clock->Stop();
   m_av_clock->Pause();
@@ -257,7 +257,7 @@ static void FlushStreams(int64_t pts = AV_NOPTS_VALUE)
   }
 }
 
-static enum ControlFlow Seek(int seconds_delta)
+static enum ControlFlow seek(int seconds_delta)
 {
   int64_t cur_pts = m_av_clock->GetMediaTime();
 
@@ -265,7 +265,7 @@ static enum ControlFlow Seek(int seconds_delta)
   {
   case SEEK_SUCCESS:
     show_progress_message("Seek", (int)(cur_pts * 1e-6));
-    FlushStreams(cur_pts);
+    flush_streams(cur_pts);
     CLogLog(LOGDEBUG, "Seeked %lld", cur_pts);
     break;
   case SEEK_OUT_OF_BOUNDS:
@@ -298,7 +298,7 @@ static int get_approx_speed(double &new_speed)
   return arr_len - 1;
 }
 
-void initDVDSubs()
+void init_dvd_subs()
 {
   // Check if we have any DVD subtitles (these can be on ordinary media files as well as DVDs)
   // If so, setup a dispmanx layer to display them
@@ -312,7 +312,7 @@ void initDVDSubs()
 
   Rect view_port = DispmanxLayer::GetVideoPort(sub_aspect, m_config_video.aspectMode);
 
-  m_player_subtitles->initDVDSubs(view_port, sub_dim, palette);
+  m_player_subtitles->InitDVDSubs(view_port, sub_dim, palette);
 }
 
 static int startup(int argc, char *argv[])
@@ -322,7 +322,7 @@ static int startup(int argc, char *argv[])
   signal(SIGUSR1, sig_handler);
 
   // do we have enough memory to run
-  int gpu_mem = m_video_core.get_mem_gpu();
+  int gpu_mem = m_video_core.GetMemGpu();
   const int min_gpu_mem = 64;
   if (gpu_mem > 0 && gpu_mem < min_gpu_mem)
     printf("Only %dM of gpu_mem is configured. Try running \"sudo raspi-config\" and ensure that \"memory_split\" has a value of %d or greater\n", gpu_mem, min_gpu_mem);
@@ -890,15 +890,15 @@ static int startup(int argc, char *argv[])
   m_av_clock = &clock;
 
   // initialise display
-  DispmanxLayer::openDisplay(m_config_video.display);
-  DispmanxLayer::setLayer(m_config_video.layer);
-  DispmanxLayer::setScreenRect(m_config_video.dst_rect);
+  DispmanxLayer::OpenDisplay(m_config_video.display);
+  DispmanxLayer::SetLayer(m_config_video.layer);
+  DispmanxLayer::SetScreenRect(m_config_video.dst_rect);
 
   // blank background - exclude fully transparent backgrounds
   if(background > 0x00FFFFFF)
   {
     static DispmanxLayer background_layer(4, Rect(0, 0, 0, 0), Dimension(1, 1));
-    background_layer.setImageData(&background, false);
+    background_layer.SetImageData(&background, false);
   }
 
   // init subtitle object
@@ -907,7 +907,7 @@ static int startup(int argc, char *argv[])
 
   osd_print(OSD_EXTRA, "Loading...");
 
-  m_omxcontrol.connect(dbus_name);
+  m_omxcontrol.Connect(dbus_name);
 
   // 3d modes don't work without switch hdmi mode
   if (m_3d != CONF_FLAGS_FORMAT_NONE || m_NativeDeinterlace)
@@ -944,7 +944,7 @@ static int startup(int argc, char *argv[])
 
   // no audio device name has been set on command line
   if(m_config_audio.device.empty())
-    m_config_audio.device = m_video_core.getAudioDevice();
+    m_config_audio.device = m_video_core.GetAudioDevice();
 
   // set defaults
   if(m_config_audio.device == "omx:alsa" && m_config_audio.subdevice.empty())
@@ -973,7 +973,7 @@ restart:
   {
     if(!Exists(m_filename))
     {
-      osd_printf(OSD_ERROR, "File \"%s\" not found.", getShortFileName().c_str());
+      osd_printf(OSD_ERROR, "File \"%s\" not found.", get_short_file_name().c_str());
       return END_PLAY_WITH_ERROR;
     }
 
@@ -983,10 +983,10 @@ restart:
 
     // check if this is a link file
     // if it's a link file, rerun some file checks
-    if(!started_from_link && m_file_store.checkIfLink(m_filename))
+    if(!started_from_link && m_file_store.CheckIfLink(m_filename))
     {
       started_from_link = true;
-      m_file_store.readlink(m_filename, m_track, m_incr,
+      m_file_store.Readlink(m_filename, m_track, m_incr,
                             m_audio_lang, m_audio_index,
                             m_subtitle_lang, m_subtitle_index);
       goto restart;
@@ -999,19 +999,19 @@ restart:
     if(m_is_dvd_device)
       m_filename = findvideots.GetMatch(1);
     else if(!m_dump_format_exit)
-      m_playlist.readPlaylist(m_filename);
+      m_playlist.ReadPlaylist(m_filename);
   }
 
   // read the relevant recent files/dvd store
   if(!m_dump_format_exit && m_playlist_enabled)
   {
     if(m_is_dvd_device) {
-      m_dvd_store.readStore();
+      m_dvd_store.ReadStore();
     } else {
-      m_playlist_enabled = m_file_store.readStore();
+      m_playlist_enabled = m_file_store.ReadStore();
 
       if(m_playlist_enabled && !started_from_link)
-        m_file_store.retrieveRecentInfo(m_filename, m_track, m_incr,
+        m_file_store.RetrieveRecentInfo(m_filename, m_track, m_incr,
                                         m_audio_lang, m_audio_index,
                                         m_subtitle_lang, m_subtitle_index);
     }
@@ -1044,7 +1044,7 @@ static int change_playlist_item()
 
     // Was DVD played before?
     if(!m_dump_format_exit && m_is_dvd_device && m_playlist_enabled)
-      m_dvd_store.retrieveRecentInfo(m_DvdPlayer->GetID(),
+      m_dvd_store.RetrieveRecentInfo(m_DvdPlayer->GetID(),
                                      m_track,
                                      m_incr,
                                      m_audio_lang,
@@ -1084,9 +1084,9 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
   case OPEN_URI:
     {
       std::string file;
-      if(!m->get_arg_string(file))
+      if(!m->GetArgString(file))
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
 
@@ -1096,13 +1096,13 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       if(IsPipe(m_filename) || IsPipe(m_replacement_filename))
       {
         m_replacement_filename.clear();
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         CLogLog(LOGDEBUG, "Providing a pipe or replacing one via dbus is not supported.");
         break;
       }
 
       // error management
-      m->respond_string(file);
+      m->RespondString(file);
       m_stopped = true;
       return END_PLAY;
     }
@@ -1113,14 +1113,14 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
     if(search_key == SET_SPEED)
     {
       double rate;
-      if(!m->get_arg_double(&rate))
+      if(!m->GetArgDouble(&rate))
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
 
       int new_speed = get_approx_speed(rate);
-      m->respond_double(rate);
+      m->RespondDouble(rate);
 
       if(new_speed == 0)
         return handle_event(ACTION_PAUSE, m);
@@ -1136,7 +1136,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       if(playspeed_current < playspeed_max) playspeed_current++;
     }
 
-    SetSpeed(playspeeds[playspeed_current]);
+    set_speed(playspeeds[playspeed_current]);
     osd_printf(OSD_NORM | OSD_STDOUT, "Playspeed: %.3f", playspeeds[playspeed_current]);
     m_Pause = false;
     break;
@@ -1156,21 +1156,21 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
     {
       osd_print(OSD_ERROR, "Audio unavailable");
       if(search_key == SET_AUDIO_STREAM)
-        m->respond_bool(false);
+        m->RespondBool(false);
       break;
     }
 
     if(search_key == SET_AUDIO_STREAM)
     {
       int index;
-      if (!m->get_arg_int(&index))
+      if (!m->GetArgInt(&index))
       {
-        m->respond_bool(false);
+        m->RespondBool(false);
         break;
       }
 
       m_audio_index = m_player_audio->SetActiveStream(index);
-      m->respond_bool(m_audio_index == index);
+      m->RespondBool(m_audio_index == index);
     }
     else
     {
@@ -1196,14 +1196,14 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       {
       case SEEK_SUCCESS:
         osd_printf(OSD_NORM, "Chapter %d", result_chapter + 1);
-        FlushStreams(cur_pts);
+        flush_streams(cur_pts);
         break;
       case SEEK_OUT_OF_BOUNDS:
         m_send_eos = true;
         m_next_prev_file = delta;
         return END_PLAY;
       case SEEK_NO_CHAPTERS:
-        return Seek(delta * 600);
+        return seek(delta * 600);
 
       case SEEK_FAIL:
         break;
@@ -1221,42 +1221,42 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
 
   case ACTION_PREVIOUS_SUBTITLE:
     m_subtitle_index = m_player_subtitles->SetActiveStreamDelta(-1);
-    printSubtitleOsd();
+    print_subtitle_osd();
     break;
 
   case ACTION_NEXT_SUBTITLE:
     m_subtitle_index = m_player_subtitles->SetActiveStreamDelta(1);
-    printSubtitleOsd();
+    print_subtitle_osd();
     break;
 
   case SET_SUBTITLE_STREAM:
     {
       int index;
-      if(!m->get_arg_int(&index))
+      if(!m->GetArgInt(&index))
       {
-        m->respond_bool(false);
+        m->RespondBool(false);
         break;
       }
 
       m_subtitle_index = m_player_subtitles->SetActiveStream(index);
-      m->respond_bool(m_subtitle_index == index);
-      printSubtitleOsd();
+      m->RespondBool(m_subtitle_index == index);
+      print_subtitle_osd();
     }
     break;
 
   case ACTION_TOGGLE_SUBTITLE:
     m_subtitle_index = m_player_subtitles->ToggleVisible();
-    printSubtitleOsd();
+    print_subtitle_osd();
     break;
 
   case ACTION_HIDE_SUBTITLES:
     m_subtitle_index = m_player_subtitles->SetVisible(false);
-    printSubtitleOsd();
+    print_subtitle_osd();
     break;
 
   case ACTION_SHOW_SUBTITLES:
     m_subtitle_index = m_player_subtitles->SetVisible(true);
-    printSubtitleOsd();
+    print_subtitle_osd();
     break;
 
   case ACTION_DECREASE_SUBTITLE_DELAY:
@@ -1284,16 +1284,16 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
     return END_PLAY;
 
   case ACTION_SEEK_BACK_SMALL:
-    return Seek(-30);
+    return seek(-30);
 
   case ACTION_SEEK_FORWARD_SMALL:
-    return Seek(30);
+    return seek(30);
 
   case ACTION_SEEK_FORWARD_LARGE:
-    return Seek(600);
+    return seek(600);
 
   case ACTION_SEEK_BACK_LARGE:
-    return Seek(-600);
+    return seek(-600);
 
   case ACTION_PLAY:
   case ACTION_PAUSE:
@@ -1308,7 +1308,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
           m_av_clock->PlaySpeed() != DVD_PLAYSPEED_PAUSE)
       {
         playspeed_current = playspeed_normal;
-        SetSpeed(playspeeds[playspeed_normal]);
+        set_speed(playspeeds[playspeed_normal]);
       }
 
       if(m_Pause) m_player_subtitles->Pause();
@@ -1322,9 +1322,9 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
   case SET_VIDEO_CROP_POS:
     {
       std::string pos;
-      if(!m->ignore_arg() || !m->get_arg_string(pos))
+      if(!m->IgnoreArg() || !m->GetArgString(pos))
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
       int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
@@ -1340,9 +1340,9 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
   case SET_VIDEO_POS:
     {
       std::string pos;
-      if(!m->ignore_arg() || !m->get_arg_string(pos))
+      if(!m->IgnoreArg() || !m->GetArgString(pos))
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
       int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
@@ -1351,7 +1351,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       m_config_video.dst_rect.y = y1;
       m_config_video.dst_rect.width = x2 - x1;
       m_config_video.dst_rect.height = y2 - y1;
-      DispmanxLayer::setScreenRect(m_config_video.dst_rect);
+      DispmanxLayer::SetScreenRect(m_config_video.dst_rect);
       if(m_player_video) m_player_video->SetVideoRect(m_config_video.src_rect, m_config_video.dst_rect);
       if(m_player_subtitles) m_player_subtitles->ReInitSubLayer();
       break;
@@ -1378,11 +1378,11 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
     break;
 
   case INVALID_METHOD:
-    m->respond_unknown_method();
+    m->RespondUnknownMethod();
     break;
 
   case INVALID_PROPERTY:
-    m->respond_unknown_property();
+    m->RespondUnknownProperty();
     break;
 
   case RAISE:
@@ -1392,13 +1392,13 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
     {
       //Retrieve interface and property name
       std::string property;
-      if(m->ignore_arg() && m->get_arg_string(property))
+      if(m->IgnoreArg() && m->GetArgString(property))
       {
         return handle_event(dbus_find_property(property.c_str()), m);
       }
       else
       {
-         m->respond_invalid_args();
+         m->RespondInvalidArgs();
          break;
       }
     }
@@ -1409,9 +1409,9 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       //Message has the form message[STRING:interface STRING:property DOUBLE:value] or message[STRING:interface STRING:property VARIANT[DOUBLE:value]]
       std::string property;
 
-      if(!m->ignore_arg() || !m->get_arg_string(property))
+      if(!m->IgnoreArg() || !m->GetArgString(property))
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
 
@@ -1425,7 +1425,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       }
 
       //Wrong property
-      m->respond_unknown_property();
+      m->RespondUnknownProperty();
     }
     break;
 
@@ -1435,7 +1435,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
   case CAN_PLAY:
   case CAN_PAUSE:
   case GET_FULLSCREEN:
-    m->respond_bool(true);
+    m->RespondBool(true);
     break;
 
   case CAN_SET_FULLSCREEN:
@@ -1445,52 +1445,52 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
   case CAN_GO_PREVIOUS:
   case GET_CAN_RAISE:
   case GET_HAS_TRACK_LIST:
-    m->respond_bool(false);
+    m->RespondBool(false);
     break;
 
   case GET_IDENTITY:
-    m->respond_string("OMXPlayer");
+    m->RespondString("OMXPlayer");
     break;
 
   case GET_SUPPORTED_URI_SCHEMES:
     {
       const char *UriSchemes[] = {"file", "http", "rtsp", "rtmp"};
-      m->respond_array(UriSchemes, 4);
+      m->RespondArray(UriSchemes, 4);
       break;
     }
 
   case GET_SUPPORTED_MIME_TYPES:
     {
       const char *MimeTypes[] = {}; // Needs supplying
-      m->respond_array(MimeTypes, 0);
+      m->RespondArray(MimeTypes, 0);
       break;
     }
 
   case CAN_SEEK:
-    m->respond_bool(m_omx_reader->CanSeek());
+    m->RespondBool(m_omx_reader->CanSeek());
     break;
 
   case GET_PLAYBACK_STATUS:
-    m->respond_string(m_av_clock->IsPaused() ? "Paused" : "Playing");
+    m->RespondString(m_av_clock->IsPaused() ? "Paused" : "Playing");
     break;
 
   case GET_SOURCE:
-    m->respond_string(m_filename);
+    m->RespondString(m_filename);
     break;
 
   case SET_VOLUME:
     {
       if(!m_player_audio)
       {
-        m->respond_double(0.0);
+        m->RespondDouble(0.0);
         break;
       }
 
       double volume;
-      if(m->get_arg_double(&volume))
+      if(m->GetArgDouble(&volume))
       {
         if(volume < 1.0) volume = 1.0;
-        m->respond_double(volume);
+        m->RespondDouble(volume);
         m_Volume = 2000 * log10(volume);
         m_player_audio->SetVolume(volume);
         osd_printf(OSD_NORM | OSD_STDOUT, "Volume: %.2f dB", m_Volume / 100.0f);
@@ -1498,7 +1498,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       }
       else
       {
-        m->respond_double(m_player_audio->GetVolume());
+        m->RespondDouble(m_player_audio->GetVolume());
         break;
       }
     }
@@ -1513,39 +1513,39 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
 
   case GET_POSITION:
     // Returns the current position in microseconds
-    m->respond_int64(m_av_clock->GetMediaTime());
+    m->RespondInt64(m_av_clock->GetMediaTime());
     break;
 
   case GET_ASPECT:
     // Returns aspect ratio
-    m->respond_double(m_omx_reader->GetAspectRatio());
+    m->RespondDouble(m_omx_reader->GetAspectRatio());
     break;
 
   case GET_VIDEO_STREAM_COUNT:
     // Returns number of video streams
-    m->respond_int64(m_omx_reader->VideoStreamCount());
+    m->RespondInt64(m_omx_reader->VideoStreamCount());
     break;
 
   case GET_RES_WIDTH:
     // Returns width of video
-    m->respond_int64(m_omx_reader->GetWidth());
+    m->RespondInt64(m_omx_reader->GetWidth());
     break;
 
   case GET_RES_HEIGHT:
     // Returns height of video
-    m->respond_int64(m_omx_reader->GetHeight());
+    m->RespondInt64(m_omx_reader->GetHeight());
     break;
 
   case GET_DURATION:
     // Returns the duration in microseconds
-    m->respond_int64(m_omx_reader->GetStreamLengthMicro());
+    m->RespondInt64(m_omx_reader->GetStreamLengthMicro());
     break;
 
   case SET_POSITION:
     // set position expects an additional argument over ACTION_SEEK_RELATIVE
-    if(!m->ignore_arg())
+    if(!m->IgnoreArg())
     {
-      m->respond_invalid_args();
+      m->RespondInvalidArgs();
       break;
     }
     // fall through
@@ -1554,9 +1554,9 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       int64_t seek_pts;
 
       // Make sure a value is sent for setting position
-      if(!m->get_arg_int64(&seek_pts))
+      if(!m->GetArgInt64(&seek_pts))
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
 
@@ -1578,11 +1578,11 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       if(r == SEEK_SUCCESS)
       {
         show_progress_message("Seek", (int)(cur_pts * 1e-6));
-        FlushStreams(cur_pts);
+        flush_streams(cur_pts);
         CLogLog(LOGDEBUG, "Seeked %lld", cur_pts);
       }
 
-      m->respond_int64(cur_pts);
+      m->RespondInt64(cur_pts);
       break;
     }
 
@@ -1591,14 +1591,14 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       int64_t alpha;
 
       // Make sure a value is sent for setting alpha
-      if(m->ignore_arg() && m->get_arg_int64(&alpha))
+      if(m->IgnoreArg() && m->GetArgInt64(&alpha))
       {
-        m->respond_int64(alpha);
+        m->RespondInt64(alpha);
         if(m_player_video) m_player_video->SetAlpha(alpha);
       }
       else
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
       }
       break;
     }
@@ -1608,15 +1608,15 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       int64_t layer;
 
       // Make sure a value is sent for setting layer
-      if(m->get_arg_int64(&layer))
+      if(m->GetArgInt64(&layer))
       {
-        m->respond_int64(layer);
-        DispmanxLayer::setLayer(layer);
+        m->RespondInt64(layer);
+        DispmanxLayer::SetLayer(layer);
         if(m_player_video) m_player_video->SetLayer(layer);
       }
       else
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
       }
       break;
     }
@@ -1627,9 +1627,9 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
         break;
 
       std::string aspectMode;
-      if(!m->ignore_arg() || !m->get_arg_string(aspectMode))
+      if(!m->IgnoreArg() || !m->GetArgString(aspectMode))
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
 
@@ -1641,11 +1641,11 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
         m_config_video.aspectMode = 3;
       else
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
 
-      m->respond_string(aspectMode);
+      m->RespondString(aspectMode);
       m_player_video->SetVideoRect(m_config_video.aspectMode);
 
       break;
@@ -1661,7 +1661,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       if(active_stream > -1)
         sub_list[active_stream] += "active";
 
-      m->respond_array(sub_list);
+      m->RespondArray(sub_list);
       break;
     }
 
@@ -1673,7 +1673,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       if(m_player_audio && !m_player_audio->GetMute())
         audio_list[m_player_audio->GetActiveStream()] += "active";
 
-      m->respond_array(audio_list);
+      m->RespondArray(audio_list);
       break;
     }
 
@@ -1685,7 +1685,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
       if(m_player_video)
         video_list[0] += "active";
 
-      m->respond_array(video_list);
+      m->RespondArray(video_list);
       break;
     }
 
@@ -1693,15 +1693,15 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
     {
       std::vector<std::string> chapter_list;
       m_omx_reader->GetChapterMetaData(chapter_list);
-      m->respond_array(chapter_list);
+      m->RespondArray(chapter_list);
     }
 
   case DO_ACTION:
     {
       int action;
-      if(!m->get_arg_int(&action) || action >= START_OF_DBUS_METHODS)
+      if(!m->GetArgInt(&action) || action >= START_OF_DBUS_METHODS)
       {
-        m->respond_invalid_args();
+        m->RespondInvalidArgs();
         break;
       }
 
@@ -1709,21 +1709,21 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
     }
 
   case GET_MINIMUM_RATE:
-    m->respond_double(playspeeds[1]);
+    m->RespondDouble(playspeeds[1]);
     break;
 
   case GET_MAXIMUM_RATE:
-    m->respond_double(playspeeds[playspeed_max]);
+    m->RespondDouble(playspeeds[playspeed_max]);
     break;
 
   case GET_RATE:
     //return current playing rate
-    m->respond_double((double)m_av_clock->PlaySpeed()/1000.0f);
+    m->RespondDouble((double)m_av_clock->PlaySpeed()/1000.0f);
     break;
 
   case GET_VOLUME:
     //return current volume
-    m->respond_double(m_player_audio ? m_player_audio->GetVolume() : 0.0f);
+    m->RespondDouble(m_player_audio ? m_player_audio->GetVolume() : 0.0f);
     break;
 
   case GET_METADATA:
@@ -1734,7 +1734,7 @@ enum ControlFlow handle_event(enum Action search_key, DMessage *m)
 
       int64_t duration = m_omx_reader->GetStreamLengthMicro();
 
-      m->send_metadata(url.c_str(), &duration);
+      m->SendMetadata(url.c_str(), &duration);
       break;
     }
 
@@ -1766,11 +1766,11 @@ static int run_play_loop()
   // print chapter info
   if(m_dump_format)
   {
-    m_omx_reader->info_dump(m_filename);
+    m_omx_reader->InfoDump(m_filename);
 
     // print dvd info
     if(m_DvdPlayer)
-      m_DvdPlayer->info_dump();
+      m_DvdPlayer->InfoDump();
   }
 
   if (m_dump_format_exit)
@@ -1799,7 +1799,7 @@ static int run_play_loop()
   if(m_DvdPlayer)
     display_name = m_DvdPlayer->GetTitle() + ", Track " + std::to_string(m_track + 1);
   else
-    display_name = getShortFileName();
+    display_name = get_short_file_name();
 
   printf("Playing: %s\n", display_name.c_str());
 
@@ -1814,7 +1814,7 @@ static int run_play_loop()
   {
     osd_print(OSD_EXTRA | OSD_LONG, display_name.c_str());
   }
-  UpdateRaspicastMetaData(display_name);
+  update_raspicast_metadata(display_name);
 
   /* -------------------------------------------------------
                            Video Setup
@@ -1832,12 +1832,12 @@ static int run_play_loop()
 
     if(m_refresh)
     {
-      m_video_core.saveTVState();
+      m_video_core.SaveTVState();
       m_video_core.SetVideoMode(&m_config_video.hints, m_3d, m_NativeDeinterlace);
     }
 
     // get display aspect
-    m_config_video.display_aspect = m_video_core.getDisplayAspect();
+    m_config_video.display_aspect = m_video_core.GetDisplayAspect();
 
     if(m_orientation >= 0)
       m_config_video.hints.orientation = m_orientation;
@@ -1892,12 +1892,12 @@ static int run_play_loop()
 
     if(m_config_audio.hints.codec == AV_CODEC_ID_AC3 || m_config_audio.hints.codec == AV_CODEC_ID_EAC3)
     {
-      if(m_video_core.canPassThroughAC3())
+      if(m_video_core.CanPassThroughAC3())
         m_config_audio.passthrough = false;
     }
     else if(m_config_audio.hints.codec == AV_CODEC_ID_DTS)
     {
-      if(m_video_core.canPassThroughDTS())
+      if(m_video_core.CanPassThroughDTS())
         m_config_audio.passthrough = false;
     }
 
@@ -1946,7 +1946,7 @@ static int run_play_loop()
 
   m_player_subtitles->SetActiveStream(m_subtitle_index);
 
-  initDVDSubs();
+  init_dvd_subs();
 
   m_player_subtitles->PrintInfo();
 
@@ -1963,7 +1963,7 @@ static int run_play_loop()
      ------------------------------------------------------- */
 
   // forget seek time of all files being played
-  if(!m_is_dvd_device) m_file_store.forget(m_filename);
+  if(!m_is_dvd_device) m_file_store.Forget(m_filename);
 
   int64_t last_check_time = 0;
 
@@ -1982,12 +1982,12 @@ static int run_play_loop()
       enum Action action;
       enum ControlFlow next;
 
-      if(!m_keyboard || (action = m_keyboard->getEvent()) == INVALID_ACTION)
-        action = (m_cec_listener) ? m_cec_listener->getEvent() : INVALID_ACTION;
+      if(!m_keyboard || (action = m_keyboard->GetEvent()) == INVALID_ACTION)
+        action = (m_cec_listener) ? m_cec_listener->GetEvent() : INVALID_ACTION;
       if(action != INVALID_ACTION)
         next = handle_event(action, nullptr);
       else if(m_omxcontrol)
-        next = m_omxcontrol.getEvent();
+        next = m_omxcontrol.GetEvent();
       else
         next = CONTINUE;
 
@@ -2139,7 +2139,7 @@ static int run_play_loop()
         int64_t seek_ts = (int64_t)m_loop_from * AV_TIME_BASE;
         if(m_omx_reader->SeekTime(seek_ts, true) == SEEK_SUCCESS)
         {
-          FlushStreams(seek_ts);
+          flush_streams(seek_ts);
           continue;
         }
       }
@@ -2223,7 +2223,7 @@ static void end_of_play_loop()
   }
 
   // flush streams
-  FlushStreams();
+  flush_streams();
 
   safe_delete(m_player_video);
   safe_delete(m_player_audio);
@@ -2267,9 +2267,9 @@ static int playlist_control()
 
     } else if(!m_firstfile || t > 5) {
       if(m_is_dvd_device)
-        m_dvd_store.remember(m_track, t, m_audio_lang, m_subtitle_lang);
+        m_dvd_store.Remember(m_track, t, m_audio_lang, m_subtitle_lang);
       else
-        m_file_store.remember(m_filename, m_track, t,
+        m_file_store.Remember(m_filename, m_track, t,
                               m_audio_lang, m_audio_index,
                               m_subtitle_lang, m_subtitle_index);
     }
@@ -2280,8 +2280,8 @@ static int playlist_control()
     safe_delete(m_DvdPlayer);
 
     if(m_playlist_enabled) {
-      if(m_is_dvd_device) m_dvd_store.saveStore();
-      else m_file_store.saveStore();
+      if(m_is_dvd_device) m_dvd_store.SaveStore();
+      else m_file_store.SaveStore();
     }
 
     m_filename = m_replacement_filename;
@@ -2316,8 +2316,8 @@ static int shutdown(bool exit_with_error)
 
   // save recent files
   if(m_playlist_enabled) {
-    if(m_is_dvd_device) m_dvd_store.saveStore();
-    else m_file_store.saveStore();
+    if(m_is_dvd_device) m_dvd_store.SaveStore();
+    else m_file_store.SaveStore();
   }
 
   puts("have a nice day ;)");

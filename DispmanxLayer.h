@@ -40,24 +40,24 @@ public:
     const uint32_t *palette = nullptr);
   ~DispmanxLayer();
 
-  void hideElement();
-  void clearImage();
-  void setImageData(void *image_data, bool show = true);
+  void HideElement();
+  void ClearImage();
+  void SetImageData(void *image_data, bool show = true);
 
-  const int& getSourceWidth();
-  const int& getSourceHeight();
+  const int& GetSourceWidth();
+  const int& GetSourceHeight();
 
-  static void openDisplay(int display_num);
-  static void setLayer(int layer);
-  static void setScreenRect(const Rect &rect);
+  static void OpenDisplay(int display_num);
+  static void SetLayer(int layer);
+  static void SetScreenRect(const Rect &rect);
 
-  static const Rect &getScreenDimensions();
+  static const Rect &GetScreenDimensions();
   static Rect GetVideoPort(float video_aspect_ratio, int aspect_mode);
-  static void closeDisplay();
+  static void CloseDisplay();
 
 private:
-  void changeImageLayer(int new_layer);
-  void showElement();
+  void ChangeImageLayer(int new_layer);
+  void ShowElement();
 
   VC_RECT_T m_bmpRect;
   int m_image_pitch;

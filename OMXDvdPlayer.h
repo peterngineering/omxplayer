@@ -38,11 +38,11 @@ public:
 
   const std::string &GetID() const { return disc_checksum; }
   const std::string &GetTitle() const { return disc_title; }
-  void removeCompositeTracks();
+  void RemoveCompositeTracks();
 
-  void info_dump();
-  static int dvdtime2msec(dvd_time_t *dt);
-  static const char* convertLangCode(uint16_t lang);
+  void InfoDump();
+  static int Dvdtime2msec(dvd_time_t *dt);
+  static const char* ConvertLangCode(uint16_t lang);
 
   typedef struct {
     unsigned int first_sector;
@@ -77,9 +77,9 @@ public:
 private:
   std::vector<track_info> tracks;
 
-  void read_title_name();
-  void read_disc_checksum();
-  void read_disc_serial_number();
+  void ReadTitleName();
+  void ReadDiscChecksum();
+  void ReadDiscSerialNumber();
 
   dvd_reader_t *dvd_device;
   dvd_file_t *dvd_track = nullptr;
@@ -90,5 +90,5 @@ private:
   std::string disc_title;
   std::string disc_checksum;
 
-  int yvu2rgb(int c);
+  int Yvu2rgb(int c);
 };

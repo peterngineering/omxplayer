@@ -24,7 +24,7 @@
 class AutoPlaylist
 {
 public:
-  void readPlaylist(const std::string &indexfilepath);
+  void ReadPlaylist(const std::string &indexfilepath);
   bool ChangeFile(int delta, std::string &filename);
 
 private:

@@ -41,7 +41,7 @@ public:
 protected:
   void GetStreams();
   void GetChapters();
-  uint32_t *getPalette(OMXStream *st, uint32_t *palette) override;
+  uint32_t *GetPalette(OMXStream *st, uint32_t *palette) override;
   void AddExternalSubs();
 
   std::vector<int64_t> m_chapters;
