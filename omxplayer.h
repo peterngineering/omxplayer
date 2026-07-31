@@ -38,4 +38,4 @@ class DMessage;
 
 enum ControlFlow handle_event(enum Action search_key, DMessage *m);
 
-void initDVDSubs();
+void init_dvd_subs();

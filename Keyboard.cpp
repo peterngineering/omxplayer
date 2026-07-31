@@ -31,7 +31,7 @@
 Keyboard::Keyboard(const char *filename)
 {
   // setKeymap
-  KeyConfig::buildKeymap(filename, m_keymap);
+  KeyConfig::BuildKeymap(filename, m_keymap);
 
   if (isatty(STDIN_FILENO))
   {
@@ -126,7 +126,7 @@ void Keyboard::Process()
   }
 }
 
-enum Action Keyboard::getEvent()
+enum Action Keyboard::GetEvent()
 {
   return (enum Action)m_action.exchange(-1);
 }

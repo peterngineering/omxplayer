@@ -78,7 +78,7 @@ static int compare(const void *a, const void *b)
 /* Converts the action string from the config file into
  * the corresponding enum value
  */
-static int convertStringToAction(const string &str_action)
+static int ConvertStringToAction(const string &str_action)
 {
   struct action_lookup *result = (struct action_lookup *)
     bsearch(str_action.c_str(), table, item_count, item_size, compare);
@@ -87,7 +87,7 @@ static int convertStringToAction(const string &str_action)
 }
 /* Parses a line from the config file in the mode 'action:key'. Looks up
 the action in the relevant enum array. Returns true on success. */
-static bool getActionAndKeyFromString(const string &line, int &int_action, string &key)
+static bool GetActionAndKeyFromString(const string &line, int &int_action, string &key)
 {
   if(line[0] == '#')
     return false;
@@ -99,7 +99,7 @@ static bool getActionAndKeyFromString(const string &line, int &int_action, strin
   string str_action = line.substr(0, colonIndex);
   key = line.substr(colonIndex+1);
 
-  int_action = convertStringToAction(str_action);
+  int_action = ConvertStringToAction(str_action);
 
   if(int_action == -1 || key.size() < 1)
     return false;
@@ -110,7 +110,7 @@ static bool getActionAndKeyFromString(const string &line, int &int_action, strin
 /* Returns a keymap consisting of the default
  *  keybinds specified with the -k option
  */
-static void buildDefaultKeymap(unordered_map<int,int> &keymap)
+static void BuildDefaultKeymap(unordered_map<int,int> &keymap)
 {
   keymap['<'] = ACTION_DECREASE_SPEED;
   keymap['>'] = ACTION_INCREASE_SPEED;
@@ -145,14 +145,14 @@ static void buildDefaultKeymap(unordered_map<int,int> &keymap)
 
 /* Parses the supplied config file and turns it into a map object.
  */
-static void parseConfigFile(const char *filepath, unordered_map<int, int> &keymap)
+static void ParseConfigFile(const char *filepath, unordered_map<int, int> &keymap)
 {
   ifstream config_file(filepath);
 
   if(!config_file.is_open())
   {
     cerr << "Failed to open key config file: " << filepath << endl;
-    buildDefaultKeymap(keymap);
+    BuildDefaultKeymap(keymap);
     return;
   }
 
@@ -162,7 +162,7 @@ static void parseConfigFile(const char *filepath, unordered_map<int, int> &keyma
 
   while(getline(config_file, line))
   {
-    if(getActionAndKeyFromString(line, key_action, key))
+    if(GetActionAndKeyFromString(line, key_action, key))
     {
       if(key.substr(0,4) == "left")
       {
@@ -212,12 +212,12 @@ static void parseConfigFile(const char *filepath, unordered_map<int, int> &keyma
   }
 }
 
-void buildKeymap(const char *filename, unordered_map<int, int> &map)
+void BuildKeymap(const char *filename, unordered_map<int, int> &map)
 {
   if(filename == nullptr) {
-    buildDefaultKeymap(map);
+    BuildDefaultKeymap(map);
   } else {
-    parseConfigFile(filename, map);
+    ParseConfigFile(filename, map);
   }
 }
 

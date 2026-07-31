@@ -19,6 +19,7 @@
  */
 
 #include <string>
+#include <stdint.h>
 
 #include "utils/simple_geometry.h"
 
@@ -32,8 +33,8 @@ public:
   int stop;
   bool isImage = false;
 
-  void assign_image(unsigned char *data, int size, uint32_t *p);
-  void alloc_text(int size);
+  void AssignImage(unsigned char *data, int size, uint32_t *p);
+  void AllocText(int size);
 
   struct {
     std::basic_string<unsigned char> data;

@@ -38,5 +38,5 @@ class Keyboard : public OMXThread
   ~Keyboard() override;
   void Process() override;
   void Sleep(unsigned int dwMilliSeconds);
-  enum Action getEvent();
+  enum Action GetEvent();
 };

@@ -123,7 +123,10 @@ enum Action
   SET_POSITION,
   SET_SPEED,
   SET_SUBTITLE_STREAM,
+  SET_VIDEO_CROP_POS,
+  SET_VIDEO_POS,
   SET_VOLUME,
+  LIST_CHAPTERS,
 };
 
 #define KEY_LEFT 0x5b44
@@ -134,5 +137,5 @@ enum Action
 
 namespace KeyConfig
 {
-  void buildKeymap(const char *filepath, std::unordered_map<int, int> &keymap);
+  void BuildKeymap(const char *filepath, std::unordered_map<int, int> &keymap);
 }

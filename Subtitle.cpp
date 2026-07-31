@@ -34,7 +34,7 @@ Subtitle::Subtitle(int start, int stop, std::string &text_lines)
   isImage = false;
 }
 
-void Subtitle::assign_image(unsigned char *srcData, int size, uint32_t *p)
+void Subtitle::AssignImage(unsigned char *srcData, int size, uint32_t *p)
 {
   if(p) {
     unsigned char palette[4];

@@ -56,7 +56,7 @@ OMXReaderDvd::OMXReaderDvd(dvd_file_t *dt, OMXDvdPlayer::track_info &ct, int tn)
   if(!buffer)
     throw "av_malloc failed";
 
-  m_ioContext = avio_alloc_context(buffer, FFMPEG_FILE_BUFFER_SIZE, 0, this, dvd_read, nullptr, dvd_seek);
+  m_ioContext = avio_alloc_context(buffer, FFMPEG_FILE_BUFFER_SIZE, 0, this, DvdRead, nullptr, DvdSeek);
   if(!m_ioContext)
     throw "avio_alloc_context failed";
 
@@ -173,7 +173,7 @@ bool OMXReaderDvd::SeekByte(int seek_byte, bool backwords, const int64_t &new_pt
   m_ioContext->buf_ptr = m_ioContext->buf_end;
 
   int flags = (backwords ? AVSEEK_FLAG_BACKWARD : 0) | AVSEEK_FLAG_BYTE;
-  reset_timeout(1);
+  ResetTimeout(1);
 
   if(av_seek_frame(m_pFormatContext, -1, (int64_t)seek_byte * 2048, flags) < 0)
   {
@@ -214,13 +214,13 @@ void OMXReaderDvd::GetStreams()
 
   // audio streams
   for(auto audio_stream : m_current_track.title->audio_streams)
-    AddStreamByHexId(audio_stream.id, OMXDvdPlayer::convertLangCode(audio_stream.lang));
+    AddStreamByHexId(audio_stream.id, OMXDvdPlayer::ConvertLangCode(audio_stream.lang));
 
   // subtitle streams
   for(auto subtitle_stream : m_current_track.title->subtitle_streams)
   {
     int hex_id = subtitle_stream.id;
-    const char *lang = OMXDvdPlayer::convertLangCode(subtitle_stream.lang);
+    const char *lang = OMXDvdPlayer::ConvertLangCode(subtitle_stream.lang);
 
     if(!AddStreamByHexId(hex_id, lang))
       AddMissingSubtitleStream(hex_id, lang);
@@ -267,13 +267,13 @@ void OMXReaderDvd::AddMissingSubtitleStream(int hex_id, const char *lang)
 }
 
 
-int OMXReaderDvd::dvd_read(void *h, uint8_t* buf, int size)
+int OMXReaderDvd::DvdRead(void *h, uint8_t* buf, int size)
 {
   OMXReaderDvd *reader = static_cast<OMXReaderDvd*>(h);
   return reader->DvdRead(buf, size / DVD_VIDEO_LB_LEN);
 }
 
-int64_t OMXReaderDvd::dvd_seek(void *h, int64_t new_pos, int whence)
+int64_t OMXReaderDvd::DvdSeek(void *h, int64_t new_pos, int whence)
 {
   OMXReaderDvd *reader = static_cast<OMXReaderDvd*>(h);
   return reader->DvdSeek(new_pos / DVD_VIDEO_LB_LEN, whence);
@@ -281,8 +281,8 @@ int64_t OMXReaderDvd::dvd_seek(void *h, int64_t new_pos, int whence)
 
 int OMXReaderDvd::DvdRead(uint8_t *lpBuf, int blocks_to_read)
 {
-  reset_timeout(1);
-  if(interrupt_cb())
+  ResetTimeout(1);
+  if(InterruptCb())
     return -1;
 
   if(m_pos + blocks_to_read > m_current_track.parts[m_current_part].blocks) {
@@ -315,15 +315,15 @@ int OMXReaderDvd::DvdRead(uint8_t *lpBuf, int blocks_to_read)
   return read_blocks * DVD_VIDEO_LB_LEN;
 }
 
-uint32_t *OMXReaderDvd::getPalette(OMXStream *st, uint32_t *palette)
+uint32_t *OMXReaderDvd::GetPalette(OMXStream *st, uint32_t *palette)
 {
   return m_current_track.title->palette;
 }
 
 int64_t OMXReaderDvd::DvdSeek(int new_pos, int whence)
 {
-  reset_timeout(1);
-  if(interrupt_cb())
+  ResetTimeout(1);
+  if(InterruptCb())
     return -1;
 
   switch(whence)
@@ -391,7 +391,7 @@ enum SeekResult OMXReaderDvd::SeekTime(int64_t &seek_micro, bool backwards)
     }
 
     navRead_DSI(&dsi_pack, &data[DSI_START_BYTE]);
-    cur_time_seeking_pos = OMXDvdPlayer::dvdtime2msec(&dsi_pack.dsi_gi.c_eltm);
+    cur_time_seeking_pos = OMXDvdPlayer::Dvdtime2msec(&dsi_pack.dsi_gi.c_eltm);
 
     int diff = seek_within_cell - cur_time_seeking_pos;
 
@@ -474,4 +474,24 @@ int OMXReaderDvd::GetCell(int needle)
   }
 
   return l;
+}
+
+void OMXReaderDvd::GetChapterMetaData(std::vector<std::string> &chapter_list)
+{
+  for (auto cell : m_current_track.cells)
+  {
+    if (!cell.is_chapter) continue;
+
+    char buf[256];
+    int time = cell.time / 1000;
+    snprintf(buf,
+             sizeof(buf),
+             "%02d:%02d:%02d Chapter %u",
+             time / 3600,
+             (time / 60) % 60,
+             time % 60,
+             chapter_list.size() + 1);
+
+    chapter_list.emplace_back(buf);
+  }
 }

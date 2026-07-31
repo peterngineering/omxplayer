@@ -37,10 +37,11 @@ public:
   enum SeekResult SeekTime(int64_t &time, bool backwards) override;
   enum SeekResult SeekTimeDelta(int64_t delta, int64_t &cur_pts) override;
   inline bool CanSeek() override { return true; }
+  void GetChapterMetaData(std::vector<std::string> &chapter_list) override;
 
 protected:
-  static int dvd_read(void *h, uint8_t* buf, int size);
-  static int64_t dvd_seek(void *h, int64_t new_pos, int whence);
+  static int DvdRead(void *h, uint8_t* buf, int size);
+  static int64_t DvdSeek(void *h, int64_t new_pos, int whence);
   bool SeekByte(int seek_byte, bool backwords, const int64_t &new_pts);
   void AddMissingSubtitleStream(int id, const char *lang);
   void GetStreams();
@@ -48,7 +49,7 @@ protected:
   int DvdRead(unsigned char *lpBuf, int no_blocks);
   int64_t DvdSeek(int blocks, int whence = SEEK_SET);
   int GetCell(int ms);
-  uint32_t *getPalette(OMXStream *st, uint32_t *palette) override;
+  uint32_t *GetPalette(OMXStream *st, uint32_t *palette) override;
 
   AVIOContext *m_ioContext = nullptr;
   int m_pos = 0;

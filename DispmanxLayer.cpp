@@ -37,7 +37,7 @@ int DispmanxLayer::s_layer;
 Rect DispmanxLayer::s_screen_rect;
 bool DispmanxLayer::s_is_fullscreen;
 
-void DispmanxLayer::openDisplay(int display_num, int layer, const Rect &screen_rect)
+void DispmanxLayer::OpenDisplay(int display_num)
 {
   // Open display
   s_display = vc_dispmanx_display_open(display_num);
@@ -45,9 +45,16 @@ void DispmanxLayer::openDisplay(int display_num, int layer, const Rect &screen_r
     throw "Dispamnx Error: Failed to open display layer\n"
     "(Note: omxplayer will not run if the kms driver is enabled)";
 
-  // set layer
-  s_layer = layer;
+  atexit(DispmanxLayer::CloseDisplay);
+}
 
+void DispmanxLayer::SetLayer(int layer)
+{
+  s_layer = layer;
+}
+
+void DispmanxLayer::SetScreenRect(const Rect &screen_rect)
+{
   // set s_screen_rect rectangle
   if(screen_rect.width > 0 && screen_rect.height > 0)
   {
@@ -65,11 +72,9 @@ void DispmanxLayer::openDisplay(int display_num, int layer, const Rect &screen_r
     s_screen_rect.set(0, 0, screen_info.width, screen_info.height);
     s_is_fullscreen = true;
   }
-
-  atexit(DispmanxLayer::closeDisplay);
 }
 
-const Rect &DispmanxLayer::getScreenDimensions()
+const Rect &DispmanxLayer::GetScreenDimensions()
 {
   return s_screen_rect;
 }
@@ -100,7 +105,7 @@ Rect DispmanxLayer::GetVideoPort(float video_aspect_ratio, int aspect_mode)
   return view_port;
 }
 
-void DispmanxLayer::closeDisplay()
+void DispmanxLayer::CloseDisplay()
 {
   int result = vc_dispmanx_display_close(s_display);
   if(result != 0)
@@ -189,7 +194,7 @@ DispmanxLayer::DispmanxLayer(int bytesperpixel, Rect dest_rect, Dimension src_im
     throw "Dispamnx Error: vc_dispmanx_update_submit_sync failed";
 }
 
-void DispmanxLayer::changeImageLayer(int new_layer)
+void DispmanxLayer::ChangeImageLayer(int new_layer)
 {
   m_update = vc_dispmanx_update_start(0);
   if(m_update == 0)
@@ -205,21 +210,21 @@ void DispmanxLayer::changeImageLayer(int new_layer)
     throw "Dispamnx Error: vc_dispmanx_update_submit_sync failed";
 }
 
-void DispmanxLayer::hideElement()
+void DispmanxLayer::HideElement()
 {
   if(m_element_is_hidden) return;
-  changeImageLayer(s_layer - 1);
+  ChangeImageLayer(s_layer - 1);
   m_element_is_hidden = true;
 }
 
-void DispmanxLayer::showElement()
+void DispmanxLayer::ShowElement()
 {
   if(!m_element_is_hidden) return;
-  changeImageLayer(s_layer + 1);
+  ChangeImageLayer(s_layer + 1);
   m_element_is_hidden = false;
 }
 
-void DispmanxLayer::clearImage()
+void DispmanxLayer::ClearImage()
 {
   int size = m_image_pitch * m_bmpRect.height;
 
@@ -227,13 +232,13 @@ void DispmanxLayer::clearImage()
   if(!blank) return;
 
   memset(blank, 0, size);
-  setImageData(blank, false);
+  SetImageData(blank, false);
   free(blank);
 }
 
 
 // copy image data to s_screen_rect and make the element visible
-void DispmanxLayer::setImageData(void *image_data, bool show)
+void DispmanxLayer::SetImageData(void *image_data, bool show)
 {
   // the palette param is ignored
   int result = vc_dispmanx_resource_write_data(m_resource,
@@ -247,15 +252,15 @@ void DispmanxLayer::setImageData(void *image_data, bool show)
   if(result != 0)
     throw "Dispamnx Error: vc_dispmanx_element_change_source failed";
 
-  if(show) showElement();
+  if(show) ShowElement();
 }
 
-const int& DispmanxLayer::getSourceWidth()
+const int& DispmanxLayer::GetSourceWidth()
 {
   return m_bmpRect.width;
 }
 
-const int& DispmanxLayer::getSourceHeight()
+const int& DispmanxLayer::GetSourceHeight()
 {
   return m_bmpRect.height;
 }

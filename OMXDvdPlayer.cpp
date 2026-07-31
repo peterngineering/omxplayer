@@ -40,8 +40,8 @@ OMXDvdPlayer::OMXDvdPlayer(const std::string &filename)
     throw "Error on DVDOpen";
 
   // Get device name and checksum
-  read_title_name();
-  read_disc_checksum();
+  ReadTitleName();
+  ReadDiscChecksum();
 
   // Open dvd meta data header
   ifo_handle_t *ifo_zero = ifoOpen(dvd_device, 0);
@@ -77,7 +77,7 @@ OMXDvdPlayer::OMXDvdPlayer(const std::string &filename)
       continue;
 
     // Ignore tracks which are shorter than two minutes
-    int track_length = dvdtime2msec(&pgc->playback_time);
+    int track_length = Dvdtime2msec(&pgc->playback_time);
     if(track_length < 120000)
       continue;
 
@@ -87,7 +87,7 @@ OMXDvdPlayer::OMXDvdPlayer(const std::string &filename)
 
     // some DVD tracks have dummy cells at the end, ignore them
     uint cell_count = pgc->nr_of_cells;
-    int length_of_last_cell = dvdtime2msec(&pgc->cell_playback[cell_count - 1].playback_time);
+    int length_of_last_cell = Dvdtime2msec(&pgc->cell_playback[cell_count - 1].playback_time);
     if(length_of_last_cell <= 1000)
     {
       this_track.length -= length_of_last_cell;
@@ -142,7 +142,7 @@ OMXDvdPlayer::OMXDvdPlayer(const std::string &filename)
         .is_chapter = is_chapter,
       });
 
-      acc_time += dvdtime2msec(&pgc->cell_playback[i].playback_time);
+      acc_time += Dvdtime2msec(&pgc->cell_playback[i].playback_time);
       acc_cells += pgc->cell_playback[i].last_sector - pgc->cell_playback[i].first_sector + 1;
     }
 
@@ -192,7 +192,7 @@ OMXDvdPlayer::OMXDvdPlayer(const std::string &filename)
 
     // Palette
     for (int i = 0; i < 16; i++)
-      this_track.title->palette[i] = yvu2rgb(pgc->palette[i]);
+      this_track.title->palette[i] = Yvu2rgb(pgc->palette[i]);
   }
 
   // close dvd meta data filehandles
@@ -200,7 +200,7 @@ OMXDvdPlayer::OMXDvdPlayer(const std::string &filename)
   delete [] ifo;
   ifoClose(ifo_zero);
 
-  removeCompositeTracks();
+  RemoveCompositeTracks();
 
   tracks.shrink_to_fit();
   puts("Finished parsing DVD meta data");
@@ -251,7 +251,7 @@ OMXDvdPlayer::~OMXDvdPlayer()
   DVDClose(dvd_device);
 }
 
-int OMXDvdPlayer::dvdtime2msec(dvd_time_t *dt)
+int OMXDvdPlayer::Dvdtime2msec(dvd_time_t *dt)
 {
   int ms  = ((dt->hour   >> 4) * 10 + (dt->hour   & 0x0f)) * 3600000;
   ms     += ((dt->minute >> 4) * 10 + (dt->minute & 0x0f)) * 60000;
@@ -272,7 +272,7 @@ int OMXDvdPlayer::dvdtime2msec(dvd_time_t *dt)
 /*
  *  The following method is based on code from vobcopy, by Robos, with thanks.
  */
-void OMXDvdPlayer::read_title_name()
+void OMXDvdPlayer::ReadTitleName()
 {
   FILE *filehandle;
   char title[33];
@@ -306,12 +306,12 @@ void OMXDvdPlayer::read_title_name()
   disc_title = title;
 }
 
-void OMXDvdPlayer::read_disc_checksum()
+void OMXDvdPlayer::ReadDiscChecksum()
 {
   unsigned char buf[16];
   if (DVDDiscID(dvd_device, &buf[0]) == -1) {
     fprintf(stderr, "Failed to get DVD checksum\n");
-    read_disc_serial_number(); // fallback
+    ReadDiscSerialNumber(); // fallback
     return;
   }
 
@@ -327,7 +327,7 @@ void OMXDvdPlayer::read_disc_checksum()
  *  Modified to also read serial number and alternative title based on
  *  libdvdnav's src/vm/vm.c
  */
-void OMXDvdPlayer::read_disc_serial_number()
+void OMXDvdPlayer::ReadDiscSerialNumber()
 {
   char serial_no[9];
   char buffer[DVD_VIDEO_LB_LEN];
@@ -365,7 +365,7 @@ void OMXDvdPlayer::read_disc_serial_number()
 //  |-        Track 1     -||-     Track 2      -|
 //  |-                  Track 3                 -|
 
-void OMXDvdPlayer::removeCompositeTracks()
+void OMXDvdPlayer::RemoveCompositeTracks()
 {
   // build a subset of tracks longer than 17.5 minutes
   std::vector<uint> lt;
@@ -420,7 +420,7 @@ static int clamp(float val)
 }
 
 // This is a condensed version of code from mpv
-int OMXDvdPlayer::yvu2rgb(int color)
+int OMXDvdPlayer::Yvu2rgb(int color)
 {
   int y = color >> 16 & 0xff;
   int u = color >> 8 & 0xff;
@@ -434,7 +434,7 @@ int OMXDvdPlayer::yvu2rgb(int color)
 }
 
 
-const char* OMXDvdPlayer::convertLangCode(uint16_t lang)
+const char* OMXDvdPlayer::ConvertLangCode(uint16_t lang)
 {
   // Convert two letter ISO 639-1 language code to 3 letter ISO 639-2/T
   // Supports depreciated iw, in and ji codes.
@@ -640,7 +640,7 @@ const char* OMXDvdPlayer::convertLangCode(uint16_t lang)
   return two_letter_code;
 }
 
-void OMXDvdPlayer::info_dump()
+void OMXDvdPlayer::InfoDump()
 {
   printf("DVD Tracks: %u\n", tracks.size());
   for(uint i = 0; i < tracks.size(); i++)

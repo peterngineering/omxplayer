@@ -102,7 +102,7 @@ void CECListener::ActionCallback(void *object, uint32_t response, uint32_t param
   }
 }
 
-enum Action CECListener::getEvent()
+enum Action CECListener::GetEvent()
 {
   return (enum Action)m_action.exchange(-1);
 }

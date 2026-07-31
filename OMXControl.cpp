@@ -11,12 +11,12 @@ static DBusConnection *bus = nullptr;
 
 OMXControl::~OMXControl()
 {
-  dbus_disconnect();
+  DbusDisconnect();
 }
 
-bool OMXControl::connect(const char *dbus_name)
+bool OMXControl::Connect(const char *dbus_name)
 {
-  if(dbus_connect(dbus_name))
+  if(DbusConnect(dbus_name))
   {
     CLogLog(LOGDEBUG, "DBus connection succeeded");
     dbus_threads_init_default();
@@ -25,12 +25,12 @@ bool OMXControl::connect(const char *dbus_name)
   else
   {
     CLogLog(LOGWARNING, "DBus connection failed");
-    dbus_disconnect();
+    DbusDisconnect();
     return false;
   }
 }
 
-void OMXControl::dispatch()
+void OMXControl::Dispatch()
 {
   if (bus)
     dbus_connection_read_write(bus, 0);
@@ -42,7 +42,7 @@ OMXControl::operator bool() const
   return bus;
 }
 
-bool OMXControl::dbus_connect(const char *dbus_name)
+bool OMXControl::DbusConnect(const char *dbus_name)
 {
   if(bus != nullptr)
     throw "Only one dbus connection can exist";
@@ -87,7 +87,7 @@ fail:
   return false;
 }
 
-void OMXControl::dbus_disconnect()
+void OMXControl::DbusDisconnect()
 {
   if (bus)
   {
@@ -97,12 +97,12 @@ void OMXControl::dbus_disconnect()
   }
 }
 
-enum ControlFlow OMXControl::getEvent()
+enum ControlFlow OMXControl::GetEvent()
 {
   if (!bus)
     return CONTINUE;
 
-  dispatch();
+  Dispatch();
   DBusMessage *m = dbus_connection_pop_message(bus);
   if (m == nullptr)
     return CONTINUE;
@@ -146,7 +146,7 @@ DMessage::~DMessage()
   dbus_message_unref(m);
 }
 
-bool DMessage::get_arg(int type, void *value)
+bool DMessage::GetArg(int type, void *value)
 {
   if(!m_args)
   {
@@ -179,31 +179,31 @@ bool DMessage::get_arg(int type, void *value)
   }
 }
 
-bool DMessage::get_arg_int(int *value)
+bool DMessage::GetArgInt(int *value)
 {
-  return get_arg(DBUS_TYPE_INT32, value);
+  return GetArg(DBUS_TYPE_INT32, value);
 }
 
-bool DMessage::get_arg_int64(int64_t *value)
+bool DMessage::GetArgInt64(int64_t *value)
 {
-  return get_arg(DBUS_TYPE_INT64, value);
+  return GetArg(DBUS_TYPE_INT64, value);
 }
 
-bool DMessage::get_arg_double(double *value)
+bool DMessage::GetArgDouble(double *value)
 {
-  return get_arg(DBUS_TYPE_DOUBLE, value);
+  return GetArg(DBUS_TYPE_DOUBLE, value);
 }
 
-bool DMessage::get_arg_string(std::string &s)
+bool DMessage::GetArgString(std::string &s)
 {
   const char *value;
-  bool r = get_arg(DBUS_TYPE_STRING, &value);
+  bool r = GetArg(DBUS_TYPE_STRING, &value);
   if(r)
     s.assign(value);
   return r;
 }
 
-bool DMessage::ignore_arg()
+bool DMessage::IgnoreArg()
 {
   if(!m_args)
   {
@@ -214,7 +214,7 @@ bool DMessage::ignore_arg()
   return dbus_message_iter_next(m_args);
 }
 
-void DMessage::respond_error(const char *name, const char *msg)
+void DMessage::RespondError(const char *name, const char *msg)
 {
   DBusMessage *reply = dbus_message_new_error(m, name, msg);
   if(!reply)
@@ -225,45 +225,45 @@ void DMessage::respond_error(const char *name, const char *msg)
   needs_response = false;
 }
 
-void DMessage::respond_unknown_property()
+void DMessage::RespondUnknownProperty()
 {
-  respond_error(DBUS_ERROR_UNKNOWN_PROPERTY, "Unknown property");
+  RespondError(DBUS_ERROR_UNKNOWN_PROPERTY, "Unknown property");
 }
 
 
-void DMessage::respond_unknown_method()
+void DMessage::RespondUnknownMethod()
 {
-  respond_error(DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
+  RespondError(DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
 }
 
-void DMessage::respond_invalid_args()
+void DMessage::RespondInvalidArgs()
 {
-  respond_error(DBUS_ERROR_INVALID_ARGS, "Invalid arguments");
+  RespondError(DBUS_ERROR_INVALID_ARGS, "Invalid arguments");
 }
 
-void DMessage::respond_int64(int64_t value)
+void DMessage::RespondInt64(int64_t value)
 {
-  respond(DBUS_TYPE_INT64, &value);
+  Respond(DBUS_TYPE_INT64, &value);
 }
 
-void DMessage::respond_double(double value)
+void DMessage::RespondDouble(double value)
 {
-  respond(DBUS_TYPE_DOUBLE, &value);
+  Respond(DBUS_TYPE_DOUBLE, &value);
 }
 
-void DMessage::respond_bool(bool value)
+void DMessage::RespondBool(bool value)
 {
   int t = value ? 1 : 0;
-  respond(DBUS_TYPE_BOOLEAN, &t);
+  Respond(DBUS_TYPE_BOOLEAN, &t);
 }
 
-void DMessage::respond_string(const std::string &s)
+void DMessage::RespondString(const std::string &s)
 {
   const char *value = s.c_str();
-  respond(DBUS_TYPE_STRING, &value);
+  Respond(DBUS_TYPE_STRING, &value);
 }
 
-void DMessage::respond(int type, void *value)
+void DMessage::Respond(int type, void *value)
 {
   DBusMessage *reply = dbus_message_new_method_return(m);
 
@@ -278,17 +278,17 @@ void DMessage::respond(int type, void *value)
   needs_response = false;
 }
 
-void DMessage::respond_array(const std::vector<std::string> &list)
+void DMessage::RespondArray(const std::vector<std::string> &list)
 {
   const char *char_list[list.size()];
 
   for(uint i = 0; i < list.size(); i++)
     char_list[i] = &list[i][0];
 
-  respond_array(char_list, list.size());
+  RespondArray(char_list, list.size());
 }
 
-void DMessage::respond_array(const char *array[], int size)
+void DMessage::RespondArray(const char *array[], int size)
 {
   DBusMessage *reply = dbus_message_new_method_return(m);
 
@@ -302,7 +302,7 @@ void DMessage::respond_array(const char *array[], int size)
   needs_response = false;
 }
 
-void DMessage::send_metadata(const char *url, int64_t *duration)
+void DMessage::SendMetadata(const char *url, int64_t *duration)
 {
   DBusMessage *reply = dbus_message_new_method_return(m);
   if(reply)

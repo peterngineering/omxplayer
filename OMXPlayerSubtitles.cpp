@@ -81,7 +81,7 @@ bool OMXPlayerSubtitles::Open(size_t stream_count, const string &subtitle_path)
   return true;
 }
 
-void OMXPlayerSubtitles::initDVDSubs(const Rect &view_port, const Dimension &sub_dim, const uint32_t *palette)
+void OMXPlayerSubtitles::InitDVDSubs(const Rect &view_port, const Dimension &sub_dim, const uint32_t *palette)
 {
   if(palette) {
     if(!m_palette)
@@ -165,17 +165,17 @@ void OMXPlayerSubtitles::Process()
     // and send quit signal to main thread
     pthread_kill(OMXThread::main_thread, SIGUSR1);
   }
-  m_mailbox.finish();
+  m_mailbox.Finish();
 }
 
 void OMXPlayerSubtitles::SendToRenderer(Mailbox::Item *msg)
 {
-  m_mailbox.send(msg);
+  m_mailbox.Send(msg);
 }
 
 void OMXPlayerSubtitles::SendToRenderer(Mailbox::Type msg)
 {
-  m_mailbox.send(new Mailbox::Item(msg));
+  m_mailbox.Send(new Mailbox::Item(msg));
 }
 
 template <typename Iterator>
@@ -212,7 +212,7 @@ void OMXPlayerSubtitles::RenderLoop()
     {
       if(subtitles->at(next_index).stop > time)
       {
-        m_renderer.prepare(subtitles->at(next_index));
+        m_renderer.Prepare(subtitles->at(next_index));
         have_next = true;
         break;
       }
@@ -221,7 +221,7 @@ void OMXPlayerSubtitles::RenderLoop()
 
   auto Reset = [&](int time)
   {
-    m_renderer.unprepare();
+    m_renderer.Unprepare();
     current_stop = INT_MIN;
 
     auto it = FindSubtitle(subtitles->begin(),
@@ -231,7 +231,7 @@ void OMXPlayerSubtitles::RenderLoop()
 
     if(next_index != subtitles->size())
     {
-      m_renderer.prepare(subtitles->at(next_index));
+      m_renderer.Prepare(subtitles->at(next_index));
       have_next = true;
     }
     else
@@ -266,20 +266,23 @@ void OMXPlayerSubtitles::RenderLoop()
     }
 
     // wait for next message or to timeout
-    m_mailbox.wait(chrono::milliseconds(timeout));
+    m_mailbox.Wait(chrono::milliseconds(timeout));
 
     while(1)
     {
-      Mailbox::Item *args = m_mailbox.receive();
+      Mailbox::Item *args = m_mailbox.Receive();
       if(args == nullptr)
         break;
 
       switch(args->type) {
+        case Mailbox::INIT_SUB_LAYER:
+          m_renderer.InitSubLayer();
+          break;
         case Mailbox::ADD_DVD_SUBS:
           {
             Mailbox::DVDSubs *a = (Mailbox::DVDSubs *)args;
 
-            m_renderer.setDVDSubtitleLayer(a->layer);
+            m_renderer.SetDVDSubtitleLayer(a->layer);
           }
           break;
         case Mailbox::PUSH:
@@ -350,8 +353,8 @@ void OMXPlayerSubtitles::RenderLoop()
           {
             Mailbox::DisplayText *a = (Mailbox::DisplayText *)args;
 
-            m_renderer.prepare(a->text_lines);
-            m_renderer.show_next();
+            m_renderer.Prepare(a->text_lines);
+            m_renderer.ShowNext();
             showing = true;
             osd = true;
             wait_for_osd = a->wait;
@@ -361,7 +364,7 @@ void OMXPlayerSubtitles::RenderLoop()
           }
           break;
         case Mailbox::CLOSE:
-          m_renderer.clear();
+          m_renderer.Clear();
           internal_subtitles.clear();
           subtitles = &internal_subtitles;
           prev_now = INT_MAX;
@@ -402,7 +405,7 @@ void OMXPlayerSubtitles::RenderLoop()
     {
       if(have_next && subtitles->at(next_index).start <= now)
       {
-        m_renderer.show_next();
+        m_renderer.ShowNext();
         // printf("show error: %i ms\n", now - subtitles[next_index].start);
         showing = true;
         current_stop = subtitles->at(next_index).stop;
@@ -413,7 +416,7 @@ void OMXPlayerSubtitles::RenderLoop()
       }
       else if(showing)
       {
-        m_renderer.hide();
+        m_renderer.Hide();
         // printf("hide error: %i ms\n", now - current_stop);
         showing = false;
       }
@@ -585,9 +588,9 @@ bool OMXPlayerSubtitles::GetImageData(OMXPacket *pkt, Subtitle &sub)
 
   // calculate palette and copy data
   if(m_palette)
-    sub.assign_image(r->data[0], r->linesize[0] * r->h, (uint32_t *)r->data[1]);
+    sub.AssignImage(r->data[0], r->linesize[0] * r->h, (uint32_t *)r->data[1]);
   else
-    sub.assign_image(r->data[0], r->linesize[0] * r->h, nullptr);
+    sub.AssignImage(r->data[0], r->linesize[0] * r->h, nullptr);
 
   // tidy up
   avsubtitle_free(&s);
@@ -612,4 +615,9 @@ void OMXPlayerSubtitles::AddPacket(OMXPacket *pkt)
 void OMXPlayerSubtitles::DisplayText(const string &text, int duration, bool wait)
 {
   SendToRenderer(new Mailbox::DisplayText(text, duration, wait));
+}
+
+void OMXPlayerSubtitles::ReInitSubLayer()
+{
+  SendToRenderer(Mailbox::INIT_SUB_LAYER);
 }

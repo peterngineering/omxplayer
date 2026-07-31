@@ -38,6 +38,7 @@ class DispmanxLayer;
 class Mailbox {
 public:
   enum Type {
+    INIT_SUB_LAYER,
     ADD_DVD_SUBS,
     CLOSE,
     PUSH,
@@ -132,7 +133,7 @@ public:
     bool wait;
   };
 
-  void send(Item *elem)
+  void Send(Item *elem)
   {
     std::lock_guard<std::mutex> look(messages_lock);
 
@@ -150,7 +151,7 @@ public:
     messages_cond.notify_one();
   }
 
-  Item *receive()
+  Item *Receive()
   {
     std::lock_guard<std::mutex> look(messages_lock);
 
@@ -167,13 +168,13 @@ public:
     }
   }
 
-  void wait(const std::chrono::milliseconds &rel_time)
+  void Wait(const std::chrono::milliseconds &rel_time)
   {
     std::unique_lock<std::mutex> lock(messages_lock);
     messages_cond.wait_for(lock, rel_time, [&]{return head != nullptr;});
   }
 
-  void finish()
+  void Finish()
   {
     std::lock_guard<std::mutex> look(messages_lock);
 

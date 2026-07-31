@@ -42,28 +42,57 @@ using namespace std;
 SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
 : m_centered(config->centered),
   m_ghost_box(config->ghost_box),
-  m_max_lines(config->subtitle_lines)
+  m_max_lines(config->subtitle_lines),
+  m_font_size(config->font_size)
 {
   // Subtitle tag parser regexes
   m_tags = new CRegExp("(\\n|<[^>]*>|\\{\\\\[^\\}]*\\})");
   m_font_color_html = new CRegExp("color[ \\t]*=[ \\t\"']*#?([a-f0-9]{6})");
   m_font_color_curly = new CRegExp("^\\{\\\\c&h([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})&\\}$");
 
-  // Determine screen size
-  const Rect &screen = DispmanxLayer::getScreenDimensions();
+  // import font files
+  if(FT_Init_FreeType(&m_ft_library) != 0)
+    throw "Failed to initiate FreeType";
+
+  if(FT_New_Face(m_ft_library, config->reg_font, 0, &m_ft_face_normal) != 0)
+    throw "Failed to load font";
+
+  if(FT_New_Face(m_ft_library, config->italic_font, 0, &m_ft_face_italic) != 0)
+    throw "Failed to load font";
+
+  if(FT_New_Face(m_ft_library, config->bold_font, 0, &m_ft_face_bold) != 0)
+    throw "Failed to load font";
+
+  // font colours
+  m_ghost_box_transparency = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 0.5f);
+  m_default_font_color = cairo_pattern_create_rgba(0.866667, 0.866667, 0.866667, 1.0f);
+  m_black_font_outline = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 1.0f);
+
+  InitSubLayer();
+}
 
   /*    *    *    *     *    *    *    *    *    *    *    *
    * Set up layer for text subtitles and on screen display *
    *    *    *    *     *    *    *    *    *    *    *    */
+void SubtitleRenderer::InitSubLayer()
+{
+  // free existing layer and scaled fonts (if any)
+  if (subtitleLayer) delete subtitleLayer;
+  if (m_scaled_font[NORMAL_FONT]) cairo_scaled_font_destroy(m_scaled_font[NORMAL_FONT]);
+  if (m_scaled_font[ITALIC_FONT]) cairo_scaled_font_destroy(m_scaled_font[ITALIC_FONT]);
+  if (m_scaled_font[BOLD_FONT]) cairo_scaled_font_destroy(m_scaled_font[BOLD_FONT]);
 
-  //Calculate font as thousands of screen height
-  m_font_size = screen.height * config->font_size;
+  // Determine screen size
+  const Rect &screen = DispmanxLayer::GetScreenDimensions();
+
+  // Calculate font as thousands of screen height
+  m_scaled_font_size = screen.height * m_font_size;
 
   // Calculate padding as 1/4 of the font size
-  m_padding = m_font_size / 4;
+  m_padding = m_scaled_font_size / 4;
 
   // And line_height combines the two
-  int line_height = m_font_size + m_padding;
+  int line_height = m_scaled_font_size + m_padding;
 
   // Calculate image dimensions - must be evenly divisible by 16
   Rect text_subtitle_rect;
@@ -88,22 +117,7 @@ SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
   // Create layer
   subtitleLayer = new DispmanxLayer(4, text_subtitle_rect);
 
-  /*    *    *    *     *    *    *    *    *    *    *    *
-   *                      Set up fonts                     *
-   *    *    *    *     *    *    *    *    *    *    *    */
-
-  if(FT_Init_FreeType(&m_ft_library) != 0)
-    throw "Failed to initiate FreeType";
-
-  if(FT_New_Face(m_ft_library, config->reg_font, 0, &m_ft_face_normal) != 0)
-    throw "Failed to load font";
-
-  if(FT_New_Face(m_ft_library, config->italic_font, 0, &m_ft_face_italic) != 0)
-    throw "Failed to load font";
-
-  if(FT_New_Face(m_ft_library, config->bold_font, 0, &m_ft_face_bold) != 0)
-    throw "Failed to load font";
-
+  // prepare un-scaled fonts
   cairo_font_face_t *normal_font = cairo_ft_font_face_create_for_ft_face(m_ft_face_normal, 0);
   cairo_font_face_t *italic_font = cairo_ft_font_face_create_for_ft_face(m_ft_face_italic, 0);
   cairo_font_face_t *bold_font = cairo_ft_font_face_create_for_ft_face(m_ft_face_bold, 0);
@@ -111,17 +125,12 @@ SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
   // prepare scaled fonts
   cairo_matrix_t sizeMatrix, ctm;
   cairo_matrix_init_identity(&ctm);
-  cairo_matrix_init_scale(&sizeMatrix, m_font_size, m_font_size);
+  cairo_matrix_init_scale(&sizeMatrix, m_scaled_font_size, m_scaled_font_size);
   cairo_font_options_t *options = cairo_font_options_create();
 
   m_scaled_font[NORMAL_FONT] = cairo_scaled_font_create(normal_font, &sizeMatrix, &ctm, options);
   m_scaled_font[ITALIC_FONT] = cairo_scaled_font_create(italic_font, &sizeMatrix, &ctm, options);
   m_scaled_font[BOLD_FONT] = cairo_scaled_font_create(bold_font, &sizeMatrix, &ctm, options);
-
-  // font colours
-  m_ghost_box_transparency = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 0.5f);
-  m_default_font_color = cairo_pattern_create_rgba(0.866667, 0.866667, 0.866667, 1.0f);
-  m_black_font_outline = cairo_pattern_create_rgba(0.0f, 0.0f, 0.0f, 1.0f);
 
   // cleanup
   cairo_font_options_destroy(options);
@@ -129,11 +138,12 @@ SubtitleRenderer::SubtitleRenderer(OMXSubConfig *config)
   cairo_font_face_destroy(italic_font);
   cairo_font_face_destroy(bold_font);
 }
+
   /*    *    *    *    *    *    *    *    *    *    *    *
    *            Set up layer for DVD subtitles            *
    *    *    *    *    *    *    *    *    *    *    *    */
 
-void SubtitleRenderer::setDVDSubtitleLayer(DispmanxLayer *dl)
+void SubtitleRenderer::SetDVDSubtitleLayer(DispmanxLayer *dl)
 {
   if(dvdSubLayer)
     delete dvdSubLayer;
@@ -142,7 +152,7 @@ void SubtitleRenderer::setDVDSubtitleLayer(DispmanxLayer *dl)
   dvdSubLayer = dl;
 }
 
-void SubtitleRenderer::set_font(int *old_font, int new_font)
+void SubtitleRenderer::SetFont(int *old_font, int new_font)
 {
   if(new_font == *old_font) return;
 
@@ -150,7 +160,7 @@ void SubtitleRenderer::set_font(int *old_font, int new_font)
   *old_font = new_font;
 }
 
-void SubtitleRenderer::set_color(unsigned int *old_color, unsigned int new_color)
+void SubtitleRenderer::SetColor(unsigned int *old_color, unsigned int new_color)
 {
   if(new_color == *old_color) return;
 
@@ -172,27 +182,27 @@ void SubtitleRenderer::set_color(unsigned int *old_color, unsigned int new_color
 }
 
 
-void SubtitleRenderer::prepare(Subtitle &sub)
+void SubtitleRenderer::Prepare(Subtitle &sub)
 {
-  unprepare();
+  Unprepare();
 
   if(sub.isImage)
-    make_subtitle_image(sub);
+    MakeSubtitleImage(sub);
   else
-    parse_lines(sub.text);
+    ParseLines(sub.text);
 }
 
-void SubtitleRenderer::prepare(const string &lines)
+void SubtitleRenderer::Prepare(const string &lines)
 {
-  unprepare();
+  Unprepare();
 
-  parse_lines(lines);
+  ParseLines(lines);
 }
 
-void SubtitleRenderer::make_subtitle_image(vector<vector<SubtitleText> > &parsed_lines)
+void SubtitleRenderer::MakeSubtitleImage(vector<vector<SubtitleText> > &parsed_lines)
 {
   // create surface
-  m_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, subtitleLayer->getSourceWidth(), subtitleLayer->getSourceHeight());
+  m_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, subtitleLayer->GetSourceWidth(), subtitleLayer->GetSourceHeight());
   if(cairo_surface_status(m_surface) != CAIRO_STATUS_SUCCESS)
     throw "Failed to create cairo surface";
 
@@ -205,7 +215,7 @@ void SubtitleRenderer::make_subtitle_image(vector<vector<SubtitleText> > &parsed
   unsigned int color = FC_NOT_SET;
 
   // cursor y position
-  int cursor_y_position = subtitleLayer->getSourceHeight() - m_padding;
+  int cursor_y_position = subtitleLayer->GetSourceHeight() - m_padding;
 
   // Limit the number of line
   int no_of_lines = parsed_lines.size();
@@ -248,7 +258,7 @@ void SubtitleRenderer::make_subtitle_image(vector<vector<SubtitleText> > &parsed
 
     // aligned text
     if(m_centered) {
-      cursor_x_position = (subtitleLayer->getSourceWidth() / 2) - (box_width / 2);
+      cursor_x_position = (subtitleLayer->GetSourceWidth() / 2) - (box_width / 2);
 
       for(int j = 0; j < text_parts; j++) {
         cairo_glyph_t *p = parsed_lines[i][j].glyphs;
@@ -262,15 +272,15 @@ void SubtitleRenderer::make_subtitle_image(vector<vector<SubtitleText> > &parsed
 
     // draw ghost box
     if(m_ghost_box) {
-      set_color(&color, FC_GHOST);
-      cairo_rectangle(m_cr, cursor_x_position, cursor_y_position - m_font_size, box_width,
-        m_font_size + m_padding);
+      SetColor(&color, FC_GHOST);
+      cairo_rectangle(m_cr, cursor_x_position, cursor_y_position - m_scaled_font_size, box_width,
+        m_scaled_font_size + m_padding);
       cairo_fill(m_cr);
     }
 
     for(int j = 0; j < text_parts; j++) {
-      set_font(&font, parsed_lines[i][j].font);
-      set_color(&color, parsed_lines[i][j].color);
+      SetFont(&font, parsed_lines[i][j].font);
+      SetColor(&color, parsed_lines[i][j].color);
 
       // draw text
       cairo_glyph_path(m_cr, parsed_lines[i][j].glyphs, parsed_lines[i][j].num_glyphs);
@@ -282,84 +292,84 @@ void SubtitleRenderer::make_subtitle_image(vector<vector<SubtitleText> > &parsed
 
     // draw black text outline
     cairo_fill_preserve(m_cr);
-    set_color(&color, FC_BLACK);
+    SetColor(&color, FC_BLACK);
     cairo_set_line_width(m_cr, 2);
     cairo_stroke(m_cr);
 
     // next line
-    cursor_y_position -= m_font_size + m_padding;
+    cursor_y_position -= m_scaled_font_size + m_padding;
   }
 
   m_cairo_image_data = cairo_image_surface_get_data(m_surface);
 }
 
 
-void SubtitleRenderer::make_subtitle_image(Subtitle &sub)
+void SubtitleRenderer::MakeSubtitleImage(Subtitle &sub)
 {
   unsigned char *p;
 
   // Subtitles which exceed dimensions are ignored
-  if(sub.image.rect.x + sub.image.rect.width  > dvdSubLayer->getSourceWidth() || sub.image.rect.y + sub.image.rect.height  > dvdSubLayer->getSourceHeight())
+  if(sub.image.rect.x + sub.image.rect.width  > dvdSubLayer->GetSourceWidth() || sub.image.rect.y + sub.image.rect.height  > dvdSubLayer->GetSourceHeight())
     return;
 
-  p = m_bitmap_image_data = new unsigned char[dvdSubLayer->getSourceWidth() * dvdSubLayer->getSourceHeight()];
+  p = m_bitmap_image_data = new unsigned char[dvdSubLayer->GetSourceWidth() * dvdSubLayer->GetSourceHeight()];
 
-  auto mem_set = [&p](int num_pixels)
+  auto SetBlank = [&p](int num_pixels)
   {
     memset(p, 0, num_pixels);
     p += num_pixels;
   };
 
-  auto mem_copy = [&p](const unsigned char *pixel, int len)
+  auto CopyPixels = [&p](const unsigned char *pixel, int len)
   {
     memcpy(p, pixel, len);
     p += len;
   };
 
-  int right_padding  = dvdSubLayer->getSourceWidth()  - sub.image.rect.width  - sub.image.rect.x;
-  int bottom_padding = dvdSubLayer->getSourceHeight() - sub.image.rect.height - sub.image.rect.y;
+  int right_padding  = dvdSubLayer->GetSourceWidth()  - sub.image.rect.width  - sub.image.rect.x;
+  int bottom_padding = dvdSubLayer->GetSourceHeight() - sub.image.rect.height - sub.image.rect.y;
 
   // blanks char at top
-  mem_set(sub.image.rect.y * dvdSubLayer->getSourceWidth());
+  SetBlank(sub.image.rect.y * dvdSubLayer->GetSourceWidth());
 
   for(int j = 0; j < sub.image.rect.height; j++) {
-    mem_set(sub.image.rect.x);
-    mem_copy(sub.image.data.data() + (j * sub.image.rect.width), sub.image.rect.width);
-    mem_set(right_padding);
+    SetBlank(sub.image.rect.x);
+    CopyPixels(sub.image.data.data() + (j * sub.image.rect.width), sub.image.rect.width);
+    SetBlank(right_padding);
   }
 
   // blanks char at bottom
-  mem_set(bottom_padding * dvdSubLayer->getSourceWidth());
+  SetBlank(bottom_padding * dvdSubLayer->GetSourceWidth());
 }
 
-void SubtitleRenderer::show_next()
+void SubtitleRenderer::ShowNext()
 {
   if(m_bitmap_image_data) {
-    subtitleLayer->hideElement();
-    dvdSubLayer->setImageData(m_bitmap_image_data);
-    unprepare();
+    subtitleLayer->HideElement();
+    dvdSubLayer->SetImageData(m_bitmap_image_data);
+    Unprepare();
   } else if(m_cairo_image_data) {
-    if(dvdSubLayer) dvdSubLayer->hideElement();
-    subtitleLayer->setImageData(m_cairo_image_data);
-    unprepare();
+    if(dvdSubLayer) dvdSubLayer->HideElement();
+    subtitleLayer->SetImageData(m_cairo_image_data);
+    Unprepare();
   }
 }
 
-void SubtitleRenderer::hide()
+void SubtitleRenderer::Hide()
 {
-  subtitleLayer->hideElement();
-  if(dvdSubLayer) dvdSubLayer->hideElement();
+  subtitleLayer->HideElement();
+  if(dvdSubLayer) dvdSubLayer->HideElement();
 }
 
-void SubtitleRenderer::clear()
+void SubtitleRenderer::Clear()
 {
-  subtitleLayer->clearImage();
+  subtitleLayer->ClearImage();
   if(dvdSubLayer)
     delete dvdSubLayer;
   dvdSubLayer = nullptr;
 }
 
-void SubtitleRenderer::unprepare()
+void SubtitleRenderer::Unprepare()
 {
   if(m_bitmap_image_data) {
     delete[] m_bitmap_image_data;
@@ -374,7 +384,7 @@ void SubtitleRenderer::unprepare()
 }
 
 // Tag parser functions
-void SubtitleRenderer::parse_lines(const string &text)
+void SubtitleRenderer::ParseLines(const string &text)
 {
   vector<vector<SubtitleText> > formatted_lines(1);
 
@@ -422,22 +432,22 @@ void SubtitleRenderer::parse_lines(const string &text)
       color = FC_OFF_WHITE;
     } else if (fullTag.substr(0,5) == "<font") {
       if(m_font_color_html->RegFind(fullTag, 5) >= 0) {
-        color = hex2int(m_font_color_html->GetMatch(1));
+        color = Hex2int(m_font_color_html->GetMatch(1));
       }
     } else if(m_font_color_curly->RegFind(fullTag) >= 0) {
       string t = m_font_color_curly->GetMatch(3) +
                  m_font_color_curly->GetMatch(2) +
                  m_font_color_curly->GetMatch(1);
 
-      color = hex2int(t);
+      color = Hex2int(t);
     }
   }
 
-  make_subtitle_image(formatted_lines);
+  MakeSubtitleImage(formatted_lines);
 }
 
 // expects 6 lowercase, digit hex string
-unsigned int SubtitleRenderer::hex2int(const string &hex)
+unsigned int SubtitleRenderer::Hex2int(const string &hex)
 {
   unsigned int r = 0;
   for(int i = 0, f = 20; i < 6; i++, f -= 4)
@@ -452,7 +462,7 @@ unsigned int SubtitleRenderer::hex2int(const string &hex)
 SubtitleRenderer::~SubtitleRenderer()
 {
   //destroy cairo surface, if defined
-  unprepare();
+  Unprepare();
 
   // remove DispmanX layer
   delete subtitleLayer;
